@@ -29,7 +29,7 @@ export class IdentityService {
     private _app: any;
     private _port: Number;
 
-    constructor(port?: Number) {
+    constructor(db_url: string, port?: Number, free_actions?: Array<String>) {
         this._permission_model = new MongoModel(
             "permission",
             {
@@ -112,7 +112,7 @@ export class IdentityService {
                     return false;
                 }
             },
-            ["FINDALL", "FINDONE"]
+            valid_actions
         );
 
         this._app = require('express')();
@@ -124,7 +124,7 @@ export class IdentityService {
         this._role_router = new MongoRouter(this._app, this._role_ctl, this._basic_auth);
         this._user_router = new MongoRouter(this._app, this._user_ctl, this._basic_auth);
 
-        connect('mongodb://localhost:27017/testdb', {
+        connect(db_url, {
             useNewUrlParser: true,
             useUnifiedTopology: true,
             useFindAndModify: false,
