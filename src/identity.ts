@@ -29,7 +29,7 @@ export class IdentityService {
     private _app: any;
     private _port: Number;
 
-    constructor(db_url: string, port?: Number, free_actions?: Array<String>) {
+    constructor(db_url: string, port?: Number, free_actions?: Array<String>, app_name?: string) {
         this._permission_model = new MongoModel(
             "permission",
             {
@@ -118,6 +118,10 @@ export class IdentityService {
         this._app = require('express')();
         this._app.use(urlencoded({ extended: true }));
         this._app.use(json());
+        this._app.get('/', (request: any, response: { json: (arg0: { message: string; }) => void; }) => {
+            request;
+            response.json({"message": `Welcome to test ${app_name || "My API"}.`});
+        });
         this._port = port || 8000;
 
         this._permission_router = new MongoRouter(this._app, this._permission_ctl, this._basic_auth);
