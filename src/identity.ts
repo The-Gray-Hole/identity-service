@@ -11,6 +11,14 @@ var validateEmail = function(email: string) {
     return re.test(email)
 };
 
+interface Idecoded {
+    permission: Array<string>,
+    role: Array<string>,
+    user: Array<string>,
+    exp: number,
+    iat: number
+}
+
 export class IdentityService {
     private _permission_model: MongoModel;
     private _role_model: MongoModel;
@@ -24,12 +32,17 @@ export class IdentityService {
     private _role_router: MongoRouter;
     private _user_router: MongoRouter;
 
-    private _basic_auth: Auth;
+    private _permission_auth: Auth;
+    private _role_auth: Auth;
+    private _user_auth: Auth;
 
     private _app: any;
     private _port: Number;
 
-    constructor(db_url: string, port?: Number, free_actions?: Array<String>, app_name?: string) {
+    constructor(db_url: string,
+                port?: Number,
+                free_actions?: Array<string>,
+                app_name?: string) {
         this._permission_model = new MongoModel(
             "permission",
             {
@@ -102,17 +115,40 @@ export class IdentityService {
             valid_actions,
         );
 
-        this._basic_auth = new Auth(
+        this._permission_auth = new Auth(
             function(token: string, action: string) {
                 try {
-                    var decoded = verify(token, process.env.IDENTITY_SECRET || "");
-                    console.log(process.env.IDENTITY_SECRET);
-                    return decoded == process.env.IDENTITY_SECRET;
+                    var decoded = verify(token, process.env.IDENTITY_SECRET || "") as Idecoded;
+                    return decoded.permission.includes(action);
                 } catch(err) {
                     return false;
                 }
             },
-            valid_actions
+            free_actions || []
+        );
+
+        this._role_auth = new Auth(
+            function(token: string, action: string) {
+                try {
+                    var decoded = verify(token, process.env.IDENTITY_SECRET || "") as Idecoded;
+                    return decoded.role.includes(action);
+                } catch(err) {
+                    return false;
+                }
+            },
+            free_actions || []
+        );
+
+        this._user_auth = new Auth(
+            function(token: string, action: string) {
+                try {
+                    var decoded = verify(token, process.env.IDENTITY_SECRET || "") as Idecoded;
+                    return decoded.user.includes(action);
+                } catch(err) {
+                    return false;
+                }
+            },
+            free_actions || []
         );
 
         this._app = require('express')();
@@ -120,13 +156,15 @@ export class IdentityService {
         this._app.use(json());
         this._app.get('/', (request: any, response: { json: (arg0: { message: string; }) => void; }) => {
             request;
-            response.json({"message": `Welcome to test ${app_name || "My API"}.`});
+            response.json({
+                "message": `Welcome to test ${app_name || "My API"}.`
+            });
         });
         this._port = port || 8000;
 
-        this._permission_router = new MongoRouter(this._app, this._permission_ctl, this._basic_auth);
-        this._role_router = new MongoRouter(this._app, this._role_ctl, this._basic_auth);
-        this._user_router = new MongoRouter(this._app, this._user_ctl, this._basic_auth);
+        this._permission_router = new MongoRouter(this._app, this._permission_ctl, this._permission_auth);
+        this._role_router = new MongoRouter(this._app, this._role_ctl, this._role_auth);
+        this._user_router = new MongoRouter(this._app, this._user_ctl, this._user_auth);
 
         connect(db_url, {
             useNewUrlParser: true,
