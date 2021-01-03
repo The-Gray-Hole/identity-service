@@ -40,6 +40,7 @@ export class IdentityService {
     private _port: Number;
 
     constructor(db_url: string,
+                identity_secret: string,
                 port?: Number,
                 free_actions?: Array<string>,
                 app_name?: string) {
@@ -118,7 +119,7 @@ export class IdentityService {
         this._permission_auth = new Auth(
             function(token: string, action: string) {
                 try {
-                    var decoded = verify(token, process.env.IDENTITY_SECRET || "") as Idecoded;
+                    var decoded = verify(token, identity_secret || "") as Idecoded;
                     return decoded.permission.includes(action);
                 } catch(err) {
                     return false;
@@ -130,7 +131,7 @@ export class IdentityService {
         this._role_auth = new Auth(
             function(token: string, action: string) {
                 try {
-                    var decoded = verify(token, process.env.IDENTITY_SECRET || "") as Idecoded;
+                    var decoded = verify(token, identity_secret || "") as Idecoded;
                     return decoded.role.includes(action);
                 } catch(err) {
                     return false;
@@ -142,7 +143,7 @@ export class IdentityService {
         this._user_auth = new Auth(
             function(token: string, action: string) {
                 try {
-                    var decoded = verify(token, process.env.IDENTITY_SECRET || "") as Idecoded;
+                    var decoded = verify(token, identity_secret || "") as Idecoded;
                     return decoded.user.includes(action);
                 } catch(err) {
                     return false;
