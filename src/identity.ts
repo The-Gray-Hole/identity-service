@@ -6,6 +6,8 @@ import { Types, connect } from 'mongoose';
 import { Auth } from 'rest-mongoose';
 import { verify } from 'jsonwebtoken';
 
+var cors = require('cors');
+
 var validateEmail = function(email: string) {
     var re = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
     return re.test(email)
@@ -41,6 +43,7 @@ export class IdentityService {
 
     constructor(db_url: string,
                 identity_secret: string,
+                cors_white_list: Array<string>,
                 port?: Number,
                 free_actions?: Array<string>,
                 app_name?: string) {
@@ -152,10 +155,22 @@ export class IdentityService {
             free_actions || []
         );
 
+        var corsOptions = {
+          origin: function (origin: any, callback: any) {
+            if (cors_white_list.includes(origin)) {
+              callback(null, true);
+            } else {
+              callback(new Error(`Origin ${origin} is not allowed by CORS`));
+            }
+          }
+        }
+
         this._app = require('express')();
         this._app.use(urlencoded({ extended: true }));
         this._app.use(json());
-        this._app.get('/', (request: any, response: { json: (arg0: { message: string; }) => void; }) => {
+        this._app.use(cors(corsOptions));
+
+        this._app.get('/', (request: any, response: any) => {
             request;
             response.json({
                 "message": `Welcome to test ${app_name || "My API"}.`
