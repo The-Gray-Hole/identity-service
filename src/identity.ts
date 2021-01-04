@@ -5,6 +5,8 @@ import { urlencoded, json } from 'body-parser';
 import { Types, connect } from 'mongoose';
 import { Auth } from 'rest-mongoose';
 import { verify } from 'jsonwebtoken';
+import { sign } from 'jsonwebtoken';
+import { compareSync } from 'bcryptjs';
 
 var cors = require('cors');
 
@@ -41,6 +43,7 @@ export class IdentityService {
     private _app: any;
     private _app_name: string;
     private _port: Number;
+    private _identity_secret: string;
 
     constructor(db_url: string,
                 identity_secret: string,
@@ -157,6 +160,7 @@ export class IdentityService {
 
         this._app_name = app_name || "My API";
         this._port = port || 8000;
+        this._identity_secret = identity_secret;
         
         var corsOptions = {
           origin: function (origin: any, callback: any) {
@@ -201,14 +205,24 @@ export class IdentityService {
             });
         });
 
-        this._app.get('/login', (request: any, response: any) => {
-            let user = this._user_model.model.findOne({username: request.body.username});
+        this._app.get('/login', async (request: any, response: any) => {
+            let user = await this._user_model.model.findOne({username: request.body.username}).exec();
             if(!user) {
                 return response.status(400).send({message: "Invalid credentials"});
             }
-            //Compare here
-            response.json({
-                "message": `Welcome to test ${this._app_name}.`
+            if(!compareSync(request.body.password, user.password)) {
+                return response.status(400).send({message: "Invalid credentials"});
+            }
+            let _session_token = sign({
+                exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60),
+                duration: "24 h",
+                username: user.username,
+                useremail: user.email,
+                role: user.role
+            }, this._identity_secret)
+
+            response.status(200).send({
+                session_token: _session_token
             });
         });
 
