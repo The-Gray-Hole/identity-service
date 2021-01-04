@@ -89,9 +89,7 @@ export class IdentityService {
                     trim: true,
                     lowercase: true,
                     unique: true,
-                    required: true,
-                    validate: [validateEmail, 'Please fill a valid email address'],
-                    match: /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/
+                    required: true
                 },
                 password: {
                     type: String,
