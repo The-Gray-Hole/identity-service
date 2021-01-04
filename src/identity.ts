@@ -168,7 +168,7 @@ export class IdentityService {
         this._app = require('express')();
         this._app.use(urlencoded({ extended: true }));
         this._app.use(json());
-        this._app.use(cors(corsOptions));
+        this._app.use(cors_white_list.length == 0 ? cors() : cors(corsOptions));
 
         this._app.get('/', (request: any, response: any) => {
             request;
