@@ -39,6 +39,7 @@ export class IdentityService {
     private _user_auth: Auth;
 
     private _app: any;
+    private _app_name: string;
     private _port: Number;
 
     constructor(db_url: string,
@@ -90,7 +91,7 @@ export class IdentityService {
                     unique: true,
                     required: true,
                     validate: [validateEmail, 'Please fill a valid email address'],
-                    match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please fill a valid email address']
+                    match: /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/
                 },
                 password: {
                     type: String,
@@ -101,7 +102,8 @@ export class IdentityService {
                     ref: 'Role'
                 }
             },
-            true
+            true,
+            ["password"]
         );
 
         this._permission_ctl = new MongoController(
@@ -155,6 +157,9 @@ export class IdentityService {
             free_actions || []
         );
 
+        this._app_name = app_name || "My API";
+        this._port = port || 8000;
+        
         var corsOptions = {
           origin: function (origin: any, callback: any) {
             if (cors_white_list.includes(origin)) {
@@ -169,14 +174,6 @@ export class IdentityService {
         this._app.use(urlencoded({ extended: true }));
         this._app.use(json());
         this._app.use(cors_white_list.length == 0 ? cors() : cors(corsOptions));
-
-        this._app.get('/', (request: any, response: any) => {
-            request;
-            response.json({
-                "message": `Welcome to test ${app_name || "My API"}.`
-            });
-        });
-        this._port = port || 8000;
 
         this._permission_router = new MongoRouter(this._app, this._permission_ctl, this._permission_auth);
         this._role_router = new MongoRouter(this._app, this._role_ctl, this._role_auth);
@@ -198,6 +195,25 @@ export class IdentityService {
     }
 
     public route() {
+
+        this._app.get('/', (request: any, response: any) => {
+            request;
+            response.json({
+                "message": `Welcome to test ${this._app_name}.`
+            });
+        });
+
+        this._app.get('/login', (request: any, response: any) => {
+            let user = this._user_model.model.findOne({username: request.body.username});
+            if(!user) {
+                return response.status(400).send({message: "Invalid credentials"});
+            }
+            //Compare here
+            response.json({
+                "message": `Welcome to test ${this._app_name}.`
+            });
+        });
+
         this._permission_router.route();
         this._role_router.route();
         this._user_router.route();
