@@ -86,10 +86,10 @@ export class IdentityService {
                 },
                 email: {
                     type: String,
-                    trim: true,
                     lowercase: true,
                     unique: true,
-                    required: true
+                    required: true,
+                    validate: [validateEmail, 'Please fill a valid email address']
                 },
                 password: {
                     type: String,
