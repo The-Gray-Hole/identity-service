@@ -247,6 +247,8 @@ export class IdentityService {
                 if(role.permissions.includes(permission)) {
                     let perm = await this._permission_model.model.findOne({_id: permission}).exec();
                     return response.status(200).send({message: `The user ${decoded.username} has permission to ${perm.title}`})
+                } else {
+                    return response.status(400).send({message: "Access Denied"});
                 }
             } catch(err) {
                 return response.status(400).send({message: "Access Denied"});
