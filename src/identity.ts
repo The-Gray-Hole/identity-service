@@ -15,10 +15,19 @@ var validateEmail = function(email: string) {
     return re.test(email)
 };
 
-interface Idecoded {
+interface MainDecoded {
     permission: Array<string>,
     role: Array<string>,
     user: Array<string>,
+    exp: number,
+    iat: number
+}
+
+interface SessDecoded {
+    duration: string,
+    username: string,
+    useremail: string,
+    role: string,
     exp: number,
     iat: number
 }
@@ -125,7 +134,7 @@ export class IdentityService {
         this._permission_auth = new Auth(
             function(token: string, action: string) {
                 try {
-                    var decoded = verify(token, identity_secret || "") as Idecoded;
+                    var decoded = verify(token, identity_secret || "") as MainDecoded;
                     return decoded.permission.includes(action);
                 } catch(err) {
                     return false;
@@ -137,7 +146,7 @@ export class IdentityService {
         this._role_auth = new Auth(
             function(token: string, action: string) {
                 try {
-                    var decoded = verify(token, identity_secret || "") as Idecoded;
+                    var decoded = verify(token, identity_secret || "") as MainDecoded;
                     return decoded.role.includes(action);
                 } catch(err) {
                     return false;
@@ -149,7 +158,7 @@ export class IdentityService {
         this._user_auth = new Auth(
             function(token: string, action: string) {
                 try {
-                    var decoded = verify(token, identity_secret || "") as Idecoded;
+                    var decoded = verify(token, identity_secret || "") as MainDecoded;
                     return decoded.user.includes(action);
                 } catch(err) {
                     return false;
@@ -224,6 +233,24 @@ export class IdentityService {
             response.status(200).send({
                 session_token: _session_token
             });
+        });
+
+        this._app.get('/check_permission', async (request: any, response: any) => {
+            let token = request.headers['access-token'];
+            let permission = request.body.permission;
+            if(!token) {
+                return response.status(400).send({message: "Missing access token"});
+            }
+            try {
+                let decoded = verify(token, this._identity_secret || "") as SessDecoded;
+                let role = await this._role_model.model.findOne({_id: decoded.role}).exec();
+                if(role.permissions.includes(permission)) {
+                    let perm = await this._permission_model.model.findOne({_id: permission}).exec();
+                    return response.status(200).send({message: `The user ${decoded.username} has permission to ${perm.title}`})
+                }
+            } catch(err) {
+                return response.status(400).send({message: "Access Denied"});
+            }
         });
 
         this._permission_router.route();
