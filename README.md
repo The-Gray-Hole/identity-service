@@ -15,8 +15,6 @@ let cors_withe_list = process.env.CORS_W_LIST ? process.env.CORS_W_LIST.split(",
 let free_actions = process.env.FREE_ACTIONS ? process.env.FREE_ACTIONS.split(",") : [];
 let app_name = process.env.APP_NAME;
 
-console.log(cors_withe_list);
-
 var identity = new identity.IdentityService(
     db_uri,
     secret,
