@@ -132,7 +132,7 @@ export class IdentityService {
         );
 
         this._permission_auth = new Auth(
-            function(token: string, action: string) {
+            async function(token: string, action: string) {
                 try {
                     var decoded = verify(token, identity_secret || "") as MainDecoded;
                     return decoded.permission.includes(action);
@@ -144,7 +144,7 @@ export class IdentityService {
         );
 
         this._role_auth = new Auth(
-            function(token: string, action: string) {
+            async function(token: string, action: string) {
                 try {
                     var decoded = verify(token, identity_secret || "") as MainDecoded;
                     return decoded.role.includes(action);
@@ -156,7 +156,7 @@ export class IdentityService {
         );
 
         this._user_auth = new Auth(
-            function(token: string, action: string) {
+            async function(token: string, action: string) {
                 try {
                     var decoded = verify(token, identity_secret || "") as MainDecoded;
                     return decoded.user.includes(action);
