@@ -42,6 +42,6 @@
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "jsonwebtoken": "^8.5.1",
-    "rest-mongoose": "file:../rest-mongoose"
+    "rest-mongoose": "^2.0.0"
   }
 }
