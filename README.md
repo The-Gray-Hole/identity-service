@@ -115,7 +115,7 @@ This endpoints are used to login an user and check if an user has an specific pe
 This endpoint will response with a session token if credentials are valid.
 
 ```
-/login
+/login -> POST
 ```
 
 ```javascript
@@ -130,7 +130,7 @@ payload = {
 This endpoint will response with a 200 status if the token owner role has the specified permission
 
 ```
-/check_permission
+/check_permission -> POST
 
 headers: access-token // The token obtained with the login endpoint
 ```

@@ -214,7 +214,7 @@ export class IdentityService {
             });
         });
 
-        this._app.get('/login', async (request: any, response: any) => {
+        this._app.post('/login', async (request: any, response: any) => {
             let user = await this._user_model.model.findOne({username: request.body.username}).exec();
             if(!user) {
                 return response.status(400).send({message: "Invalid credentials"});
@@ -235,7 +235,7 @@ export class IdentityService {
             });
         });
 
-        this._app.get('/check_permission', async (request: any, response: any) => {
+        this._app.post('/check_permission', async (request: any, response: any) => {
             let token = request.headers['access-token'];
             let permission = request.body.permission;
             if(!token) {
