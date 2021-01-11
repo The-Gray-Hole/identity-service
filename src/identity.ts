@@ -107,10 +107,10 @@ export class IdentityService {
                     type: String,
                     required: true
                 },
-                role: {
+                role: [{
                     type: Types.ObjectId,
                     ref: 'Role'
-                }
+                }]
             },
             true,
             ["password"]
