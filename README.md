@@ -1,8 +1,7 @@
 # identity-service
 
 An api service for user, role and permission management.
-This package has only one class named IdentityService. To get your identity service ready you only
-have to instatiate this class and call the route() and start() methods in that order.
+This package has only one class named IdentityService. To get your identity service ready you only have to instatiate this class and call the route() and start() methods in that order.
 
 Example
 ```javascript
@@ -12,7 +11,9 @@ let db_uri = process.env.DB_URI; // A mongo database
 let port = process.env.PORT;
 let secret = process.env.IDENTITY_SECRET;
 let cors_withe_list = process.env.CORS_W_LIST ? process.env.CORS_W_LIST.split(",") : [];
-let free_actions = process.env.FREE_ACTIONS ? process.env.FREE_ACTIONS.split(",") : [];
+
+// Free actions allow to not provides token for these actions
+let free_actions = process.env.FREE_ACTIONS ? process.env.FREE_ACTIONS.split(",") : ["FINDALL", "FINDONE"];
 let app_name = process.env.APP_NAME;
 
 var identity = new identity.IdentityService(
@@ -22,9 +23,22 @@ var identity = new identity.IdentityService(
     port,
     free_actions,
     app_name
-    );
+);
 
-identity.route();
+identity.route(function(resource, action, data) {
+    switch(resource) {
+        case identity.Resources.Permissions:
+            console.lg(`Performed action ${action} over Permissions with result data ${data}`);
+            break;
+        case identity.Resources.Roles:
+            console.lg(`Performed action ${action} over Roles with result data ${data}`);
+            break;
+        case identity.Resources.Users:
+            console.lg(`Performed action ${action} over Users with result data ${data}`);
+            break;
+    }
+});
+
 identity.start();
 ```
 
@@ -113,6 +127,7 @@ This endpoints are used to login an user and check if an user has an specific pe
 ### Login endpoint.
 
 This endpoint will response with a session token if credentials are valid.
+This token has encripted information relative to roles the user has.
 
 ```
 /login -> POST

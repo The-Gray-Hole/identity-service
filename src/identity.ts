@@ -32,6 +32,16 @@ interface SessDecoded {
     iat: number
 }
 
+interface RouterCallback {
+    (resource: Resources, action: string, data: any): void;
+}
+
+export enum Resources {
+    Permissions = 1,
+    Roles,
+    Users
+}
+
 export class IdentityService {
     private _permission_model: MongoModel;
     private _role_model: MongoModel;
@@ -205,7 +215,7 @@ export class IdentityService {
         });
     }
 
-    public route() {
+    public route(resources_callback?: RouterCallback) {
 
         this._app.get('/', (request: any, response: any) => {
             request;
@@ -255,9 +265,21 @@ export class IdentityService {
             }
         });
 
-        this._permission_router.route();
-        this._role_router.route();
-        this._user_router.route();
+        this._permission_router.route(function(action: string, data: any) {
+            if(resources_callback) {
+                resources_callback(Resources.Permissions, action, data);
+            }
+        });
+        this._role_router.route(function(action: string, data: any) {
+            if(resources_callback) {
+                resources_callback(Resources.Roles, action, data);
+            }
+        });
+        this._user_router.route(function(action: string, data: any) {
+            if(resources_callback) {
+                resources_callback(Resources.Users, action, data);
+            }
+        });
     }
 
     public start() {
