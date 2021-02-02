@@ -363,17 +363,15 @@ export class IdentityService {
 
     public route(resources_callback?: RouterCallback) {
 
-        var ident_serv = this;
-
         this._app.get('/', (request: any, response: any) => {
             request;
             response.json({
-                "message": `Welcome to test ${ident_serv._app_name}.`
+                "message": `Welcome to test ${this._app_name}.`
             });
         });
 
         this._app.post('/login', async (request: any, response: any) => {
-            let user = await ident_serv._user_model.model.findOne({username: request.body.username}).exec();
+            let user = await this._user_model.model.findOne({username: request.body.username}).exec();
             if(!user) {
                 return response.status(400).send({message: "Invalid user"});
             }
@@ -382,9 +380,9 @@ export class IdentityService {
             }
             let perms = [];
             for(let i = 0; i < user.roles.length; i++) {
-                let role = await ident_serv._role_model.model.findById(user.roles[i]);
+                let role = await this._role_model.model.findById(user.roles[i]);
                 for(let j = 0; j < role.permissions.length; j++) {
-                    let p = await ident_serv._permission_model.model.findById(role.permissions[j]);
+                    let p = await this._permission_model.model.findById(role.permissions[j]);
                     perms.push(p.title);
                 }
             }
