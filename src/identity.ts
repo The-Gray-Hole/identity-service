@@ -6,7 +6,7 @@ import { Types, connect } from 'mongoose';
 import { Auth } from 'rest-mongoose';
 import { verify } from 'jsonwebtoken';
 import { sign } from 'jsonwebtoken';
-import { compareSync, hashSync} from 'bcryptjs';
+import { compareSync, hashSync } from 'bcryptjs';
 
 var cors = require('cors');
 
@@ -375,10 +375,10 @@ export class IdentityService {
         this._app.post('/login', async (request: any, response: any) => {
             let user = await ident_serv._user_model.model.findOne({username: request.body.username}).exec();
             if(!user) {
-                return response.status(400).send({message: "Invalid credentials"});
+                return response.status(400).send({message: "Invalid user"});
             }
             if(!compareSync(request.body.password, user.password)) {
-                return response.status(400).send({message: "Invalid credentials"});
+                return response.status(400).send({message: "Invalid password"});
             }
             let perms = [];
             for(let i = 0; i < user.roles.length; i++) {
