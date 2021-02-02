@@ -2,28 +2,36 @@
 
 An api service for user, role and permission management.
 This package has only one class named IdentityService. To get your identity service ready you only have to instatiate this class and call the route() and start() methods in that order.
+It will create default permissions, role and one admin user for management.
 
 Example
 ```javascript
 var identity = require('identity-service');
 
-let db_uri = process.env.DB_URI; // A mongo database
+let db_uri = process.env.DB_URI;
 let port = process.env.PORT;
 let secret = process.env.IDENTITY_SECRET;
 let cors_withe_list = process.env.CORS_W_LIST ? process.env.CORS_W_LIST.split(",") : [];
-
-// Free actions allow to not provides token for these actions
+let admin_username = process.env.ADMIN_USERNAME;
+let admin_email = process.env.ADMIN_EMAIL;
+let admin_secret = process.env.ADMIN_PW;
 let free_actions = process.env.FREE_ACTIONS ? process.env.FREE_ACTIONS.split(",") : ["FINDALL", "FINDONE"];
-let app_name = process.env.APP_NAME;
+let name = process.env.APP_NAME;
 
-var identity = new identity.IdentityService(
+var tgh_identity = new identity.IdentityService(
     db_uri,
     secret,
     cors_withe_list,
+    admin_username,
+    admin_email,
+    admin_secret,
     port,
     free_actions,
-    app_name
+    name
 );
+
+tgh_identity.route();
+tgh_identity.start();
 
 identity.route(function(resource, action, data) {
     switch(resource) {
@@ -97,7 +105,7 @@ user_payload = {
     username: String,
     email: String,
     password: String,
-    role: String // The id of role the user has
+    roles: Array<String>  // The id of roles the user has
 }
 ```
 
@@ -106,19 +114,7 @@ user_payload = {
 In order to authenticate your requests you must provide an 'access-token' header
 with your token.
 
-To generate your token you should use JWT or equivalent as follows
-
-```javascript
-let jwt = require("jsonwebtoken");
-
-let token = jwt.sign({
-    exp: Math.floor(Date.now() / 1000) + (60 * 60), // This token will be valid for an hour
-    permission: ["FINDALL", "FINDONE"], // This token will be valid only to ferform FINDALL and FINDONE actions over permission endpoints.
-    role: ["FINDALL", "FINDONE", "CREATE", "UPDATE", "DELETE"], // This token will be valid to ferform all actions over role endpoints.
-    user: [] // This token will be not valid to perform any action over user endpoints.
-}, "secret-key"); // To make the token to be valid, this secret must match with the secret env variable in the API deploy
-
-```
+To generate your token you should login using the admin user created or other with the required permissions.
 
 ## Access endpoints
 
