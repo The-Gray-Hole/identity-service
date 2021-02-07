@@ -414,9 +414,8 @@ export class IdentityService {
             try {
                 let decoded = verify(token, this._identity_secret || "") as SessDecoded;
                 if(decoded.permissions.includes(permission)) {
-                    let perm = await this._permission_model.model.findOne({_id: permission}).exec();
                     return response.status(200).send({
-                        message: `The user ${decoded.username} has permission to ${perm.title}`,
+                        message: `The user ${decoded.username} has permission to ${permission}`,
                         data: {
                             duration: decoded.duration,
                             uid: decoded.uid,
@@ -427,7 +426,6 @@ export class IdentityService {
                 } else {
                     return response.status(400).send({message: "Access Denied"});
                 }
-                return response.status(400).send({message: "Access Denied"});
             } catch(err) {
                 return response.status(400).send({message: "Access Denied"});
             }
