@@ -27,6 +27,7 @@ interface SessDecoded {
     duration: string,
     username: string,
     useremail: string,
+    uid: string,
     roles: string,
     exp: number,
     iat: number
@@ -149,7 +150,8 @@ export class IdentityService {
         );
 
         this._permission_auth = new Auth(
-            async function(token: string, action: string) {
+            this._permission_model,
+            async function(token: string, action: string, instance_id: string) {
                 try {
                     var decoded = verify(token, identity_secret || "") as MainDecoded;
                     switch(action) {
@@ -171,7 +173,8 @@ export class IdentityService {
         );
 
         this._role_auth = new Auth(
-            async function(token: string, action: string) {
+            this._role_model,
+            async function(token: string, action: string, instance_id: string) {
                 try {
                     var decoded = verify(token, identity_secret || "") as MainDecoded;
                     switch(action) {
@@ -193,7 +196,8 @@ export class IdentityService {
         );
 
         this._user_auth = new Auth(
-            async function(token: string, action: string) {
+            this._user_model,
+            async function(token: string, action: string, instance_id: string) {
                 try {
                     var decoded = verify(token, identity_secret || "") as MainDecoded;
                     switch(action) {
@@ -389,6 +393,7 @@ export class IdentityService {
             let _session_token = sign({
                 exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60),
                 duration: "24 h",
+                uid: user._id,
                 username: user.username,
                 useremail: user.email,
                 permissions: perms
@@ -411,7 +416,15 @@ export class IdentityService {
                     let role = await this._role_model.model.findOne({_id: decoded.roles[i]}).exec();
                     if(role.permissions.includes(permission)) {
                         let perm = await this._permission_model.model.findOne({_id: permission}).exec();
-                        return response.status(200).send({message: `The user ${decoded.username} has permission to ${perm.title}`})
+                        return response.status(200).send({
+                            message: `The user ${decoded.username} has permission to ${perm.title}`,
+                            data: {
+                                duration: decoded.duration,
+                                uid: decoded.uid,
+                                username: decoded.username,
+                                useremail: decoded.useremail
+                            }
+                        });
                     } else {
                         return response.status(400).send({message: "Access Denied"});
                     }
