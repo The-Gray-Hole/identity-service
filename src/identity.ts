@@ -27,6 +27,7 @@ interface SessDecoded {
     duration: string,
     username: string,
     useremail: string,
+    permissions: Array<string>,
     uid: string,
     roles: string,
     exp: number,
@@ -412,23 +413,20 @@ export class IdentityService {
             }
             try {
                 let decoded = verify(token, this._identity_secret || "") as SessDecoded;
-                for(let i = 0; i < decoded.roles.length; i++) {
-                    let role = await this._role_model.model.findOne({_id: decoded.roles[i]}).exec();
-                    if(role.permissions.includes(permission)) {
-                        let perm = await this._permission_model.model.findOne({_id: permission}).exec();
-                        return response.status(200).send({
-                            message: `The user ${decoded.username} has permission to ${perm.title}`,
-                            data: {
-                                duration: decoded.duration,
-                                uid: decoded.uid,
-                                username: decoded.username,
-                                useremail: decoded.useremail
-                            }
-                        });
-                    } else {
-                        return response.status(400).send({message: "Access Denied"});
-                    }
-                } 
+                if(decoded.permissions.includes(permission)) {
+                    let perm = await this._permission_model.model.findOne({_id: permission}).exec();
+                    return response.status(200).send({
+                        message: `The user ${decoded.username} has permission to ${perm.title}`,
+                        data: {
+                            duration: decoded.duration,
+                            uid: decoded.uid,
+                            username: decoded.username,
+                            useremail: decoded.useremail
+                        }
+                    });
+                } else {
+                    return response.status(400).send({message: "Access Denied"});
+                }
                 return response.status(400).send({message: "Access Denied"});
             } catch(err) {
                 return response.status(400).send({message: "Access Denied"});
