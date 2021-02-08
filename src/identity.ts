@@ -405,6 +405,36 @@ export class IdentityService {
             });
         });
 
+        this._app.post('/yeartoken', async (request: any, response: any) => {
+            let user = await this._user_model.model.findOne({username: request.body.username}).exec();
+            if(!user) {
+                return response.status(400).send({message: "Invalid user"});
+            }
+            if(!compareSync(request.body.password, user.password)) {
+                return response.status(400).send({message: "Invalid password"});
+            }
+            let perms = [];
+            for(let i = 0; i < user.roles.length; i++) {
+                let role = await this._role_model.model.findById(user.roles[i]);
+                for(let j = 0; j < role.permissions.length; j++) {
+                    let p = await this._permission_model.model.findById(role.permissions[j]);
+                    perms.push(p.title);
+                }
+            }
+            let _session_token = sign({
+                exp: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60),
+                duration: "1 year",
+                uid: user._id,
+                username: user.username,
+                useremail: user.email,
+                permissions: perms
+            }, this._identity_secret)
+
+            response.status(200).send({
+                session_token: _session_token
+            });
+        });
+
         this._app.post('/check_permission', async (request: any, response: any) => {
             let token = request.headers['access-token'];
             let permission = request.body.permission;
