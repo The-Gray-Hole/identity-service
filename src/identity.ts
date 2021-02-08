@@ -461,6 +461,25 @@ export class IdentityService {
             }
         });
 
+        this._app.post('/get_uid', async (request: any, response: any) => {
+            let token = request.headers['access-token'];
+            if(!token) {
+                return response.status(400).send({message: "Missing access token"});
+            }
+            try {
+                let decoded = verify(token, this._identity_secret || "") as SessDecoded;
+                if(decoded.uid) {
+                    return response.status(200).send({
+                        uid: decoded.uid
+                    });
+                } else {
+                    return response.status(400).send({message: "Invalid Token"});
+                }
+            } catch(err) {
+                return response.status(400).send({message: "Invalid Token"});
+            }
+        });
+
         this._permission_router.route(function(action: string, data: any) {
             if(resources_callback) {
                 resources_callback(Resources.Permissions, action, data);
