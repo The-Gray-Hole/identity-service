@@ -1,6 +1,6 @@
 {
   "name": "identity-service",
-  "version": "2.4.2",
+  "version": "2.5.0",
   "description": "Server for role and permission management.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -44,6 +44,6 @@
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "jsonwebtoken": "^8.5.1",
-    "rest-mongoose": "^2.1.0"
+    "rest-mongoose": "^2.2.0"
   }
 }
