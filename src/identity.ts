@@ -7,6 +7,7 @@ import { Auth } from 'rest-mongoose';
 import { verify } from 'jsonwebtoken';
 import { sign } from 'jsonwebtoken';
 import { compareSync, hashSync } from 'bcryptjs';
+import { requests } from 'sinon';
 
 var cors = require('cors');
 
@@ -39,26 +40,41 @@ interface RouterCallback {
 }
 
 export enum Resources {
-    Permissions = 1,
-    Roles,
-    Users
+    TenantStatus = 1,
+    Tenant,
+    Permission,
+    Role,
+    UserStatus,
+    User
 }
 
 export class IdentityService {
     private _permission_model: MongoModel;
     private _role_model: MongoModel;
+    private _tenant_status_model: MongoModel;
+    private _tenant_model: MongoModel;
+    private _user_status_model: MongoModel;
     private _user_model: MongoModel;
 
     private _permission_ctl: MongoController;
     private _role_ctl: MongoController;
+    private _tenant_status_ctl: MongoController;
+    private _tenant_ctl: MongoController;
+    private _user_status_ctl: MongoController;
     private _user_ctl: MongoController;
 
     private _permission_router: MongoRouter;
     private _role_router: MongoRouter;
+    private _tenant_status_router: MongoRouter;
+    private _tenant_router: MongoRouter;
+    private _user_status_router: MongoRouter;
     private _user_router: MongoRouter;
 
     private _permission_auth: Auth;
     private _role_auth: Auth;
+    private _tenant_status_auth: Auth;
+    private _tenant_auth: Auth;
+    private _user_status_auth: Auth;
     private _user_auth: Auth;
 
     private _app: any;
@@ -79,12 +95,46 @@ export class IdentityService {
                 port?: Number,
                 free_actions?: Array<string>,
                 app_name?: string) {
+        
+        //########## Defining Models ##################
+        this._tenant_status_model = new MongoModel(
+            "tstatus",
+            {
+                title: {
+                    type: String,
+                    unique: true,
+                    required: true
+                }
+            },
+            true
+        )
+
+        this._tenant_model = new MongoModel(
+            "tenant",
+            {
+                tenantname: {
+                    type: String,
+                    unique: true,
+                    required: true
+                },
+                status: [{
+                    type: Types.ObjectId,
+                    ref: 'Tstatus'
+                }]
+            },
+            true
+        )
+
         this._permission_model = new MongoModel(
             "permission",
             {
                 title: {
                     type: String,
-                    unique: true,
+                    required: true
+                },
+                tenant: {
+                    type: Types.ObjectId,
+                    ref: 'Tenant',
                     required: true
                 }
             },
@@ -96,29 +146,47 @@ export class IdentityService {
             {
                 title: {
                     type: String,
-                    unique: true,
                     required: true
                 },
                 permissions: [{
                     type: Types.ObjectId,
                     ref: 'Permission'
-                }]
+                }],
+                tenant: {
+                    type: Types.ObjectId,
+                    ref: 'Tenant',
+                    required: true
+                }
             },
             true
         );
+
+        this._user_status_model = new MongoModel(
+            "ustatus",
+            {
+                title: {
+                    type: String,
+                    required: true
+                },
+                tenant: {
+                    type: Types.ObjectId,
+                    ref: 'Tenant',
+                    required: true
+                }
+            },
+            true
+        )
 
         this._user_model = new MongoModel(
             "user",
             {
                 username: {
                     type: String,
-                    unique: true,
                     required: true
                 },
                 email: {
                     type: String,
                     lowercase: true,
-                    unique: true,
                     required: true,
                     validate: [validateEmail, 'Please fill a valid email address']
                 },
@@ -129,10 +197,56 @@ export class IdentityService {
                 roles: [{
                     type: Types.ObjectId,
                     ref: 'Role'
-                }]
+                }],
+                status: [{
+                    type: Types.ObjectId,
+                    ref: 'Ustatus'
+                }],
+                tenant: {
+                    type: Types.ObjectId,
+                    ref: 'Tenant',
+                    required: true
+                }
             },
             true,
             ["password"]
+        );
+
+        //########## Defining Indexs ##################
+        this._permission_model.model.schema.index(
+            { title: 1, tenant: 1 },
+            { unique: true }
+        );
+
+        this._role_model.model.schema.index(
+            { title: 1, tenant: 1 },
+            { unique: true }
+        );
+
+        this._user_status_model.model.schema.index(
+            { title: 1, tenant: 1 },
+            { unique: true }
+        );
+
+        this._user_model.model.schema.index(
+            { username: 1, tenant: 1 },
+            { unique: true }
+        );
+
+        this._user_model.model.schema.index(
+            { email: 1, tenant: 1 },
+            { unique: true }
+        );
+
+        //########## Defining Controllers ##################
+        this._tenant_status_ctl = new MongoController(
+            this._tenant_status_model,
+            valid_actions,
+        );
+
+        this._tenant_ctl = new MongoController(
+            this._tenant_model,
+            valid_actions,
         );
 
         this._permission_ctl = new MongoController(
@@ -145,9 +259,55 @@ export class IdentityService {
             valid_actions,
         );
 
+        this._user_status_ctl = new MongoController(
+            this._user_status_model,
+            valid_actions,
+        );
+
         this._user_ctl = new MongoController(
             this._user_model,
             valid_actions,
+        );
+
+        //########## Defining Auths ##################
+        this._tenant_status_auth = new Auth(
+            this._tenant_status_model,
+            async function(token: string, action: string, instance_id: string) {
+                try {
+                    var decoded = verify(token, identity_secret || "") as MainDecoded;
+                    switch(action) {
+                        case "FINDALL": case "FINDONE":
+                            return decoded.permissions.includes("__read__tenant_stat");
+                            break;
+                        case "CREATE": case "UPDATE": case "DELETE":
+                            return decoded.permissions.includes("__write__tenant_stat");
+                            break;
+                    }
+                } catch(err) {
+                    return false;
+                }
+            },
+            free_actions || []
+        );
+
+        this._tenant_auth = new Auth(
+            this._tenant_model,
+            async function(token: string, action: string, instance_id: string) {
+                try {
+                    var decoded = verify(token, identity_secret || "") as MainDecoded;
+                    switch(action) {
+                        case "FINDALL": case "FINDONE":
+                            return decoded.permissions.includes("__read__tenant");
+                            break;
+                        case "CREATE": case "UPDATE": case "DELETE":
+                            return decoded.permissions.includes("__write__tenant");
+                            break;
+                    }
+                } catch(err) {
+                    return false;
+                }
+            },
+            free_actions || []
         );
 
         this._permission_auth = new Auth(
@@ -157,13 +317,10 @@ export class IdentityService {
                     var decoded = verify(token, identity_secret || "") as MainDecoded;
                     switch(action) {
                         case "FINDALL": case "FINDONE":
-                            return decoded.permissions.includes("__permission__view");
+                            return decoded.permissions.includes("__read__permission");
                             break;
-                        case "CREATE": case "UPDATE":
-                            return decoded.permissions.includes("__permission__write");
-                            break;
-                        case "DELETE":
-                            return decoded.permissions.includes("__permission__delete");
+                        case "CREATE": case "UPDATE": case "DELETE":
+                            return decoded.permissions.includes("__write__permission");
                             break;
                     }
                 } catch(err) {
@@ -180,13 +337,30 @@ export class IdentityService {
                     var decoded = verify(token, identity_secret || "") as MainDecoded;
                     switch(action) {
                         case "FINDALL": case "FINDONE":
-                            return decoded.permissions.includes("__role__view");
+                            return decoded.permissions.includes("__read__role");
                             break;
-                        case "CREATE": case "UPDATE":
-                            return decoded.permissions.includes("__role__write");
+                        case "CREATE": case "UPDATE": case "DELETE":
+                            return decoded.permissions.includes("__write__role");
                             break;
-                        case "DELETE":
-                            return decoded.permissions.includes("__role__delete");
+                    }
+                } catch(err) {
+                    return false;
+                }
+            },
+            free_actions || []
+        );
+
+        this._user_status_auth = new Auth(
+            this._user_status_model,
+            async function(token: string, action: string, instance_id: string) {
+                try {
+                    var decoded = verify(token, identity_secret || "") as MainDecoded;
+                    switch(action) {
+                        case "FINDALL": case "FINDONE":
+                            return decoded.permissions.includes("__read__user_stat");
+                            break;
+                        case "CREATE": case "UPDATE": case "DELETE":
+                            return decoded.permissions.includes("__write__user_stat");
                             break;
                     }
                 } catch(err) {
@@ -203,13 +377,10 @@ export class IdentityService {
                     var decoded = verify(token, identity_secret || "") as MainDecoded;
                     switch(action) {
                         case "FINDALL": case "FINDONE":
-                            return decoded.permissions.includes("__user__view");
+                            return decoded.permissions.includes("__read__user");
                             break;
-                        case "CREATE": case "UPDATE":
-                            return decoded.permissions.includes("__user__write");
-                            break;
-                        case "DELETE":
-                            return decoded.permissions.includes("__user__delete");
+                        case "CREATE": case "UPDATE": case "DELETE":
+                            return decoded.permissions.includes("__write__user");
                             break;
                     }
                 } catch(err) {
@@ -219,6 +390,7 @@ export class IdentityService {
             free_actions || []
         );
 
+        //########## Creating the app ##################
         this._app_name = app_name || "My API";
         this._port = port || 8000;
         this._identity_secret = identity_secret;
@@ -238,16 +410,19 @@ export class IdentityService {
         this._app.use(json());
         this._app.use(cors_white_list.length == 0 ? cors() : cors(corsOptions));
 
+        //########## Defining Routers ##################
+        this._tenant_status_router = new MongoRouter(this._app, this._tenant_status_ctl, this._tenant_status_auth);
+        this._tenant_router = new MongoRouter(this._app, this._tenant_ctl, this._tenant_auth);
         this._permission_router = new MongoRouter(this._app, this._permission_ctl, this._permission_auth);
         this._role_router = new MongoRouter(this._app, this._role_ctl, this._role_auth);
+        this._user_status_router = new MongoRouter(this._app, this._user_status_ctl, this._user_status_auth);
         this._user_router = new MongoRouter(this._app, this._user_ctl, this._user_auth);
 
         this._admin_username = admin_username;
         this._admin_email = admin_email;
         this._admin_password = admin_password;
 
-        var ident_serv = this;
-
+        //########## Connecting to database ##################
         connect(db_url, {
             useNewUrlParser: true,
             useUnifiedTopology: true,
@@ -255,110 +430,214 @@ export class IdentityService {
             useCreateIndex: true
         })
         .then( () => {
-            console.log("Successfully connected to database");    
+            console.log("Successfully connected to database");
         })
         .then( async () => {
-            // Creating base permissions
-            let __perms = await ident_serv._permission_model.model.find();
-            __perms = __perms.map( (val: any) => {
+            //########## Creating base tenant statuses ##################
+            let __tenant_status = await this._tenant_status_model.model.find();
+            __tenant_status = __tenant_status.map( (val: any) => {
                 return val.title;
             });
+            let new_tenant_status = [
+                {
+                    title: "__active"
+                },
+                {
+                    title: "__inactive"
+                }
+            ]
+            new_tenant_status = new_tenant_status.filter( (val: any) => {
+                return !__tenant_status.includes(val.title);
+            });
+            await this._tenant_status_model.model.create(new_tenant_status);
+
+            //########## Creating base tenants ##################
+            let __tenants = await this._tenant_model.model.find();
+            __tenants = __tenants.map( (val: any) => {
+                return val.tenantname;
+            });
+            let __active_tstatus = await this._tenant_status_model.model.find();
+            __active_tstatus = __active_tstatus
+            .filter( (val: any) => {
+                return val.title == "__active";
+            })[0]._id;
+
+            let new_tenants = [
+                {
+                    tenantname: "host",
+                    status: __active_tstatus
+                }
+            ]
+            new_tenants = new_tenants.filter( (val: any) => {
+                return !__tenants.includes(val.tenantname);
+            });
+            await this._tenant_model.model.create(new_tenants);
+
+            //########## Get Host tenant Id ##################
+            let __host_tenant = await this._tenant_model.model.find();
+            __host_tenant = __host_tenant
+            .filter( (val: any) => {
+                return val.tenantname == "host";
+            })[0]._id;
+
+            //########## Creating base permissions ##################
             let new_perms = [
                 {
-                    title: "__permission__view"
+                    title: "__read__tenant_stat",
+                    tenant: __host_tenant
                 },
                 {
-                    title: "__permission__write"
+                    title: "__write__tenant_stat",
+                    tenant: __host_tenant
                 },
                 {
-                    title: "__permission__delete"
+                    title: "__read__tenant",
+                    tenant: __host_tenant
                 },
                 {
-                    title: "__role__view"
+                    title: "__write__tenant",
+                    tenant: __host_tenant
                 },
                 {
-                    title: "__role__write"
+                    title: "__read__permission",
+                    tenant: __host_tenant
                 },
                 {
-                    title: "__role__delete"
+                    title: "__write__permission",
+                    tenant: __host_tenant
                 },
                 {
-                    title: "__user__view"
+                    title: "__read__role",
+                    tenant: __host_tenant
                 },
                 {
-                    title: "__user__write"
+                    title: "__write__role",
+                    tenant: __host_tenant
                 },
                 {
-                    title: "__user__delete"
+                    title: "__read__user_stat",
+                    tenant: __host_tenant
+                },
+                {
+                    title: "__write__user_stat",
+                    tenant: __host_tenant
+                },
+                {
+                    title: "__read__user",
+                    tenant: __host_tenant
+                },
+                {
+                    title: "__write__user",
+                    tenant: __host_tenant
                 }
             ];
+
+            let __perms = await this._permission_model.model.find();
+            __perms = __perms
+            .filter( (val: any) => {
+                return val.tenant == __host_tenant;
+            })
+            .map( (val: any) => {
+                return val.title;
+            });
 
             new_perms = new_perms.filter( (val: any) => {
                 return !__perms.includes(val.title);
             });
 
-            ident_serv._permission_model.model.create(new_perms)
-            .then( async () => {
-                // Creating base roles
-                let __roles = await ident_serv._role_model.model.find();
-                __roles = __roles.map( (val: any) => {
-                    return val.title;
-                });
-                __perms = await ident_serv._permission_model.model.find();
-                __perms = __perms
-                .filter( (val: any) => {
-                    return (
-                        val.title == "__permission__view" ||
-                        val.title == "__permission__write" ||
-                        val.title == "__permission__delete" ||
-                        val.title == "__role__view" ||
-                        val.title == "__role__write" ||
-                        val.title == "__role__delete" ||
-                        val.title == "__user__view" ||
-                        val.title == "__user__write" ||
-                        val.title == "__user__delete"
-                    );
-                })
-                .map( (val: any) => {
-                    return val._id;
-                });
-                let new_roles = [
-                    {
-                        title: "__identity_admin",
-                        permissions : __perms
-                    }
-                ];
-                new_roles = new_roles.filter( (val: any) => {
-                    return !__roles.includes(val.title);
-                });
-                ident_serv._role_model.model.create(new_roles)
-                .then( async () => {
-                    let __users = await ident_serv._user_model.model.find();
-                    __users = __users.map( (val: any) => {
-                        return val.username;
-                    });
-                    __roles = await ident_serv._role_model.model.find();
-                    __roles = __roles
-                    .filter( (val: any) => {
-                        return (val.title == "__identity_admin");
-                    })
-                    .map( (val: any) => {
-                        return val._id;
-                    });
-                    let new_users = [
-                        {
-                            username: ident_serv._admin_username,
-                            email : ident_serv._admin_email,
-                            password: hashSync(ident_serv._admin_password, 10),
-                            roles: __roles
-                        }
-                    ];
-                    new_users = new_users.filter( (val: any) => {
-                        return !__users.includes(val.username);
-                    });
-                    ident_serv._user_model.model.create(new_users);
-                });
+            await this._permission_model.model.create(new_perms);
+
+            //########## Creating base roles ##################
+            let __base_perms = await this._permission_model.model.find();
+            __base_perms = __base_perms
+            .filter( (val: any) => {
+                return new_perms.map( (val1: any) => {
+                    return val1.title;
+                }).includes(val.title) &&
+                val.tenant == __host_tenant;
+            })
+            .map( (val: any) => {
+                return val._id;
             });
+            let new_roles = [
+                {
+                    title: "__identity_admin",
+                    permissions : __base_perms,
+                    tenant: __host_tenant
+                }
+            ];
+            let __roles = await this._role_model.model.find();
+            __roles = __roles.map( (val: any) => {
+                return val.title;
+            });
+            new_roles = new_roles.filter( (val: any) => {
+                return !__roles.includes(val.title);
+            });
+            await this._role_model.model.create(new_roles);
+
+            //########## Creating base user statuses ##################
+            let __user_status = await this._user_status_model.model.find();
+            __user_status = __user_status
+            .filter( (val: any) => {
+                return val.tenant == __host_tenant;
+            })
+            .map( (val: any) => {
+                return val.title;
+            });
+            let new_user_status = [
+                {
+                    title: "__active",
+                    tenant: __host_tenant
+                },
+                {
+                    title: "__inactive",
+                    tenant: __host_tenant
+                }
+            ]
+            new_user_status = new_user_status.filter( (val: any) => {
+                return !__user_status.includes(val.title);
+            });
+            await this._user_status_model.model.create(new_user_status);
+
+            //########## Creating base users ##################
+            let __active_ustatus = await this._user_status_model.model.find();
+            __active_ustatus = __active_ustatus
+            .filter( (val: any) => {
+                return val.title == "__active" && val.tenant == __host_tenant;
+            })[0]._id;
+            let __base_roles = await this._role_model.model.find();
+            __base_roles = __base_roles
+            .filter( (val: any) => {
+                return new_roles.map( (val1: any) => {
+                    return val1.title;
+                }).includes(val.title) &&
+                val.tenant == __host_tenant;
+            })
+            .map( (val: any) => {
+                return val._id;
+            });
+            let __users = await this._user_model.model.find();
+            __users = __users
+            .filter( (val: any) => {
+                return val.tenant == __host_tenant;
+            })
+            .map( (val: any) => {
+                return val.username;
+            });
+            let new_users = [
+                {
+                    username: this._admin_username,
+                    email : this._admin_email,
+                    password: hashSync(this._admin_password, 10),
+                    roles: __base_roles,
+                    status: __active_ustatus,
+                    tenant: __host_tenant
+                }
+            ];
+            new_users = new_users.filter( (val: any) => {
+                return !__users.includes(val.username);
+            });
+            this._user_model.model.create(new_users);
         })
         .catch( err => {
             console.log('Could not connect to the database. Exiting now...', err);
@@ -371,59 +650,47 @@ export class IdentityService {
         this._app.get('/', (request: any, response: any) => {
             request;
             response.json({
-                "message": `Welcome to test ${this._app_name}.`
+                message: `Welcome to test ${this._app_name}.`,
+                endpoints: [
+                    "/",
+                    "/tstatuss",
+                    "/tenants",
+                    "/permissions",
+                    "/roles",
+                    "/ustatuss",
+                    "/users",
+                    "/tstatuss:tstatusid",
+                    "/tenants/:tenantid",
+                    "/permissions/permissionid:",
+                    "/roles/:roleid",
+                    "/ustatuss/:ustatusid",
+                    "/users/:userid",
+                ]
             });
         });
 
         this._app.post('/login', async (request: any, response: any) => {
             let user = await this._user_model.model.findOne({username: request.body.username}).exec();
             if(!user) {
-                return response.status(400).send({message: "Invalid user"});
+                return response.status(400).send({message: "Invalid credentials"});
             }
             if(!compareSync(request.body.password, user.password)) {
-                return response.status(400).send({message: "Invalid password"});
+                return response.status(400).send({message: "Invalid credentials"});
             }
             let perms = [];
             for(let i = 0; i < user.roles.length; i++) {
                 let role = await this._role_model.model.findById(user.roles[i]);
+                if(role.tenant != user.tenant) continue;
                 for(let j = 0; j < role.permissions.length; j++) {
                     let p = await this._permission_model.model.findById(role.permissions[j]);
+                    if(p.tenant != user.tenant) continue;
                     perms.push(p.title);
                 }
             }
+            let dur = request.body.token_duration ? request.body.token_duration : 24;
             let _session_token = sign({
-                exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60),
-                duration: "24 h",
-                uid: user._id,
-                username: user.username,
-                useremail: user.email,
-                permissions: perms
-            }, this._identity_secret)
-
-            response.status(200).send({
-                session_token: _session_token
-            });
-        });
-
-        this._app.post('/yeartoken', async (request: any, response: any) => {
-            let user = await this._user_model.model.findOne({username: request.body.username}).exec();
-            if(!user) {
-                return response.status(400).send({message: "Invalid user"});
-            }
-            if(!compareSync(request.body.password, user.password)) {
-                return response.status(400).send({message: "Invalid password"});
-            }
-            let perms = [];
-            for(let i = 0; i < user.roles.length; i++) {
-                let role = await this._role_model.model.findById(user.roles[i]);
-                for(let j = 0; j < role.permissions.length; j++) {
-                    let p = await this._permission_model.model.findById(role.permissions[j]);
-                    perms.push(p.title);
-                }
-            }
-            let _session_token = sign({
-                exp: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60),
-                duration: "1 year",
+                exp: Math.floor(Date.now() / 1000) + (dur * 60 * 60),
+                duration: `${dur} h`,
                 uid: user._id,
                 username: user.username,
                 useremail: user.email,
@@ -480,19 +747,39 @@ export class IdentityService {
             }
         });
 
+        this._tenant_status_router.route(function(action: string, data: any) {
+            if(resources_callback) {
+                resources_callback(Resources.TenantStatus, action, data);
+            }
+        });
+
+        this._tenant_router.route(function(action: string, data: any) {
+            if(resources_callback) {
+                resources_callback(Resources.Tenant, action, data);
+            }
+        });
+
         this._permission_router.route(function(action: string, data: any) {
             if(resources_callback) {
-                resources_callback(Resources.Permissions, action, data);
+                resources_callback(Resources.Permission, action, data);
             }
         });
+
         this._role_router.route(function(action: string, data: any) {
             if(resources_callback) {
-                resources_callback(Resources.Roles, action, data);
+                resources_callback(Resources.Role, action, data);
             }
         });
+
+        this._user_status_router.route(function(action: string, data: any) {
+            if(resources_callback) {
+                resources_callback(Resources.UserStatus, action, data);
+            }
+        });
+
         this._user_router.route(function(action: string, data: any) {
             if(resources_callback) {
-                resources_callback(Resources.Users, action, data);
+                resources_callback(Resources.User, action, data);
             }
         });
     }
