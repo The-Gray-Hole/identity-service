@@ -138,7 +138,14 @@ export class IdentityService {
                     required: true
                 }
             },
-            true
+            true,
+            [],
+            [
+                {
+                    fields: { title: 1, tenant: 1 },
+                    options: { unique: true }
+                }
+            ]
         );
 
         this._role_model = new MongoModel(
@@ -158,7 +165,14 @@ export class IdentityService {
                     required: true
                 }
             },
-            true
+            true,
+            [],
+            [
+                {
+                    fields: { title: 1, tenant: 1 },
+                    options: { unique: true }
+                }
+            ]
         );
 
         this._user_status_model = new MongoModel(
@@ -174,7 +188,14 @@ export class IdentityService {
                     required: true
                 }
             },
-            true
+            true,
+            [],
+            [
+                {
+                    fields: { title: 1, tenant: 1 },
+                    options: { unique: true }
+                }
+            ]
         )
 
         this._user_model = new MongoModel(
@@ -209,33 +230,17 @@ export class IdentityService {
                 }
             },
             true,
-            ["password"]
-        );
-
-        //########## Defining Indexs ##################
-        this._permission_model.model.schema.index(
-            { title: 1, tenant: 1 },
-            { unique: true }
-        );
-
-        this._role_model.model.schema.index(
-            { title: 1, tenant: 1 },
-            { unique: true }
-        );
-
-        this._user_status_model.model.schema.index(
-            { title: 1, tenant: 1 },
-            { unique: true }
-        );
-
-        this._user_model.model.schema.index(
-            { username: 1, tenant: 1 },
-            { unique: true }
-        );
-
-        this._user_model.model.schema.index(
-            { email: 1, tenant: 1 },
-            { unique: true }
+            ["password"],
+            [
+                {
+                    fields: { username: 1, tenant: 1 },
+                    options: { unique: true }
+                },
+                {
+                    fields: { email: 1, tenant: 1 },
+                    options: { unique: true }
+                }
+            ]
         );
 
         //########## Defining Controllers ##################
@@ -535,7 +540,7 @@ export class IdentityService {
             let __perms = await this._permission_model.model.find();
             __perms = __perms
             .filter( (val: any) => {
-                return val.tenant == __host_tenant;
+                return String(val.tenant) == String(__host_tenant);
             })
             .map( (val: any) => {
                 return val.title;
@@ -554,7 +559,7 @@ export class IdentityService {
                 return new_perms.map( (val1: any) => {
                     return val1.title;
                 }).includes(val.title) &&
-                val.tenant == __host_tenant;
+                String(val.tenant) == String(__host_tenant);
             })
             .map( (val: any) => {
                 return val._id;
@@ -579,7 +584,7 @@ export class IdentityService {
             let __user_status = await this._user_status_model.model.find();
             __user_status = __user_status
             .filter( (val: any) => {
-                return val.tenant == __host_tenant;
+                return String(val.tenant) == String(__host_tenant);
             })
             .map( (val: any) => {
                 return val.title;
@@ -603,7 +608,7 @@ export class IdentityService {
             let __active_ustatus = await this._user_status_model.model.find();
             __active_ustatus = __active_ustatus
             .filter( (val: any) => {
-                return val.title == "__active" && val.tenant == __host_tenant;
+                return val.title == "__active" && String(val.tenant) == String(__host_tenant);
             })[0]._id;
             let __base_roles = await this._role_model.model.find();
             __base_roles = __base_roles
@@ -611,7 +616,7 @@ export class IdentityService {
                 return new_roles.map( (val1: any) => {
                     return val1.title;
                 }).includes(val.title) &&
-                val.tenant == __host_tenant;
+                String(val.tenant) == String(__host_tenant);
             })
             .map( (val: any) => {
                 return val._id;
@@ -619,7 +624,7 @@ export class IdentityService {
             let __users = await this._user_model.model.find();
             __users = __users
             .filter( (val: any) => {
-                return val.tenant == __host_tenant;
+                return String(val.tenant) == String(__host_tenant);
             })
             .map( (val: any) => {
                 return val.username;
@@ -680,10 +685,10 @@ export class IdentityService {
             let perms = [];
             for(let i = 0; i < user.roles.length; i++) {
                 let role = await this._role_model.model.findById(user.roles[i]);
-                if(role.tenant != user.tenant) continue;
+                if(String(role.tenant) != String(user.tenant)) continue;
                 for(let j = 0; j < role.permissions.length; j++) {
                     let p = await this._permission_model.model.findById(role.permissions[j]);
-                    if(p.tenant != user.tenant) continue;
+                    if(String(p.tenant) != String(user.tenant)) continue;
                     perms.push(p.title);
                 }
             }
