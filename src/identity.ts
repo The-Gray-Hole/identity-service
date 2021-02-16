@@ -656,21 +656,55 @@ export class IdentityService {
             request;
             response.json({
                 message: `Welcome to test ${this._app_name}.`,
-                endpoints: [
-                    "/",
-                    "/tstatuss",
-                    "/tenants",
-                    "/permissions",
-                    "/roles",
-                    "/ustatuss",
-                    "/users",
-                    "/tstatuss:tstatusid",
-                    "/tenants/:tenantid",
-                    "/permissions/permissionid:",
-                    "/roles/:roleid",
-                    "/ustatuss/:ustatusid",
-                    "/users/:userid",
-                ]
+                endpoints: {
+                    root: {
+                        __href: [
+                            "/"
+                        ],
+                        actions: [
+                            "GET"
+                        ]
+                    },
+                    resources_all: {
+                        __href: [
+                            "/tstatuss",
+                            "/tenants",
+                            "/permissions",
+                            "/roles",
+                            "/ustatuss",
+                            "/users"
+                        ],
+                        actions: [
+                            "GET",
+                            "POST"
+                        ]
+                    },
+                    resources_one: {
+                        __href: [
+                            "/tstatuss:tstatusid",
+                            "/tenants/:tenantid",
+                            "/permissions/permissionid:",
+                            "/roles/:roleid",
+                            "/ustatuss/:ustatusid",
+                            "/users/:userid"
+                        ],
+                        actions: [
+                            "GET",
+                            "PUT",
+                            "DELETE"
+                        ]
+                    },
+                    auth: {
+                        __href: [
+                            "/login",
+                            "/check_permission",
+                            "/get_uid"
+                        ],
+                        actions: [
+                            "POST"
+                        ]
+                    }
+                }
             });
         });
 
