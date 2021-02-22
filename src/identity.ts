@@ -7,7 +7,6 @@ import { Auth } from 'rest-mongoose';
 import { verify } from 'jsonwebtoken';
 import { sign } from 'jsonwebtoken';
 import { compareSync, hashSync } from 'bcryptjs';
-import { requests } from 'sinon';
 
 var cors = require('cors');
 
@@ -207,7 +206,6 @@ export class IdentityService {
                 },
                 email: {
                     type: String,
-                    lowercase: true,
                     required: true,
                     validate: [validateEmail, 'Please fill a valid email address']
                 },
@@ -534,6 +532,10 @@ export class IdentityService {
                 {
                     title: "__write__user",
                     tenant: __host_tenant
+                },
+                {
+                    title: "__read__resources_config",
+                    tenant: __host_tenant
                 }
             ];
 
@@ -783,6 +785,339 @@ export class IdentityService {
                 }
             } catch(err) {
                 return response.status(400).send({message: "Invalid Token"});
+            }
+        });
+
+        this._app.get('/resources_config', async (request: any, response: any) => {
+            let token = request.headers['access-token'];
+            if(!token) {
+                return response.status(400).send({message: "Missing access token"});
+            }
+            try {
+                let decoded = verify(token, this._identity_secret || "") as SessDecoded;
+                if(decoded.permissions.includes("__read__resources_config")) {
+                    return response.status(200).send({
+                        message: `This is resources configuration to render in frontend`,
+                        resources: [
+                            {
+                                title: "Tenant Statuses",
+                                href: "/tstatuss",
+                                fileds: [
+                                    {
+                                        db_name: "_id",
+                                        verbose_name: "Id",
+                                        type: "text",
+                                        href: null,
+                                        use_field: null,
+                                        actions: [],
+                                        show: true,
+                                        strong: false,
+                                        elipsis: true,
+                                        tooltip: true
+                                    },
+                                    {
+                                        db_name: "title",
+                                        verbose_name: "Title",
+                                        type: "text",
+                                        href: null,
+                                        use_field: null,
+                                        actions: [],
+                                        show: true,
+                                        strong: false,
+                                        elipsis: true,
+                                        tooltip: true
+                                    }
+                                ]
+                            },
+                            {
+                                title: "Tenants",
+                                href: "/tenants",
+                                fileds: [
+                                    {
+                                        db_name: "_id",
+                                        verbose_name: "Id",
+                                        type: "text",
+                                        href: null,
+                                        use_field: null,
+                                        actions: [],
+                                        show: true,
+                                        strong: false,
+                                        elipsis: true,
+                                        tooltip: true
+                                    },
+                                    {
+                                        db_name: "tenantname",
+                                        verbose_name: "Name",
+                                        type: "text",
+                                        href: null,
+                                        use_field: null,
+                                        actions: [],
+                                        show: true,
+                                        strong: false,
+                                        elipsis: true,
+                                        tooltip: true
+                                    },
+                                    {
+                                        db_name: "status",
+                                        verbose_name: "Status",
+                                        type: "reference_list",
+                                        href: "/tstatuss",
+                                        use_field: "title",
+                                        actions: [
+                                            "see",
+                                            "edit"
+                                        ],
+                                        show: true,
+                                        strong: false,
+                                        elipsis: true,
+                                        tooltip: true
+                                    }
+                                ]
+                            },
+                            {
+                                title: "Permissions",
+                                href: "/permissions",
+                                fileds: [
+                                    {
+                                        db_name: "_id",
+                                        verbose_name: "Id",
+                                        type: "text",
+                                        href: null,
+                                        use_field: null,
+                                        actions: [],
+                                        show: true,
+                                        strong: false,
+                                        elipsis: true,
+                                        tooltip: true
+                                    },
+                                    {
+                                        db_name: "title",
+                                        verbose_name: "Title",
+                                        type: "text",
+                                        href: null,
+                                        use_field: null,
+                                        actions: [],
+                                        show: true,
+                                        strong: false,
+                                        elipsis: true,
+                                        tooltip: true
+                                    },
+                                    {
+                                        db_name: "tenant",
+                                        verbose_name: "Tenant",
+                                        type: "reference",
+                                        href: "/tenants",
+                                        use_field: "tenantname",
+                                        actions: [],
+                                        show: true,
+                                        strong: false,
+                                        elipsis: true,
+                                        tooltip: true
+                                    }
+                                ]
+                            },
+                            {
+                                title: "Roles",
+                                href: "/roles",
+                                fileds: [
+                                    {
+                                        db_name: "_id",
+                                        verbose_name: "Id",
+                                        type: "text",
+                                        href: null,
+                                        use_field: null,
+                                        actions: [],
+                                        show: true,
+                                        strong: false,
+                                        elipsis: true,
+                                        tooltip: true
+                                    },
+                                    {
+                                        db_name: "title",
+                                        verbose_name: "Title",
+                                        type: "text",
+                                        href: null,
+                                        use_field: null,
+                                        actions: [],
+                                        show: true,
+                                        strong: false,
+                                        elipsis: true,
+                                        tooltip: true
+                                    },
+                                    {
+                                        db_name: "permissions",
+                                        verbose_name: "Permissions",
+                                        type: "reference_list",
+                                        href: "/permissions",
+                                        use_field: "title",
+                                        actions: [
+                                            "see",
+                                            "edit"
+                                        ],
+                                        show: true,
+                                        strong: false,
+                                        elipsis: true,
+                                        tooltip: true
+                                    },
+                                    {
+                                        db_name: "tenant",
+                                        verbose_name: "Tenant",
+                                        type: "reference",
+                                        href: "/tenants",
+                                        use_field: "tenantname",
+                                        actions: [],
+                                        show: true,
+                                        strong: false,
+                                        elipsis: true,
+                                        tooltip: true
+                                    }
+                                ]
+                            },
+                            {
+                                title: "User Statuses",
+                                href: "/ustatuss",
+                                fileds: [
+                                    {
+                                        db_name: "_id",
+                                        verbose_name: "Id",
+                                        type: "text",
+                                        href: null,
+                                        use_field: null,
+                                        actions: [],
+                                        show: true,
+                                        strong: false,
+                                        elipsis: true,
+                                        tooltip: true
+                                    },
+                                    {
+                                        db_name: "title",
+                                        verbose_name: "Title",
+                                        type: "text",
+                                        href: null,
+                                        use_field: null,
+                                        actions: [],
+                                        show: true,
+                                        strong: false,
+                                        elipsis: true,
+                                        tooltip: true
+                                    },
+                                    {
+                                        db_name: "tenant",
+                                        verbose_name: "Tenant",
+                                        type: "reference",
+                                        href: "/tenants",
+                                        use_field: "tenantname",
+                                        actions: [],
+                                        show: true,
+                                        strong: false,
+                                        elipsis: true,
+                                        tooltip: true
+                                    }
+                                ]
+                            },
+                            {
+                                title: "Users",
+                                href: "/users",
+                                fileds: [
+                                    {
+                                        db_name: "_id",
+                                        verbose_name: "Id",
+                                        type: "text",
+                                        href: null,
+                                        use_field: null,
+                                        actions: [],
+                                        show: true,
+                                        strong: false,
+                                        elipsis: true,
+                                        tooltip: true
+                                    },
+                                    {
+                                        db_name: "username",
+                                        verbose_name: "Username",
+                                        type: "text",
+                                        href: null,
+                                        use_field: null,
+                                        actions: [],
+                                        show: true,
+                                        strong: false,
+                                        elipsis: true,
+                                        tooltip: true
+                                    },
+                                    {
+                                        db_name: "email",
+                                        verbose_name: "Email",
+                                        type: "text",
+                                        href: null,
+                                        use_field: null,
+                                        actions: [],
+                                        show: true,
+                                        strong: false,
+                                        elipsis: true,
+                                        tooltip: true
+                                    },
+                                    {
+                                        db_name: "password",
+                                        verbose_name: "PassWord",
+                                        type: "text",
+                                        href: null,
+                                        use_field: null,
+                                        actions: [],
+                                        show: true,
+                                        strong: false,
+                                        elipsis: true,
+                                        tooltip: true
+                                    },
+                                    {
+                                        db_name: "roles",
+                                        verbose_name: "Roles",
+                                        type: "reference_list",
+                                        href: "/roles",
+                                        use_field: "title",
+                                        actions: [
+                                            "see",
+                                            "edit"
+                                        ],
+                                        show: true,
+                                        strong: false,
+                                        elipsis: true,
+                                        tooltip: true
+                                    },
+                                    {
+                                        db_name: "status",
+                                        verbose_name: "Status",
+                                        type: "reference_list",
+                                        href: "/ustatuss",
+                                        use_field: "title",
+                                        actions: [
+                                            "see",
+                                            "edit"
+                                        ],
+                                        show: true,
+                                        strong: false,
+                                        elipsis: true,
+                                        tooltip: true
+                                    },
+                                    {
+                                        db_name: "tenant",
+                                        verbose_name: "Tenant",
+                                        type: "reference",
+                                        href: "/tenants",
+                                        use_field: "tenantname",
+                                        actions: [],
+                                        show: true,
+                                        strong: false,
+                                        elipsis: true,
+                                        tooltip: true
+                                    }
+                                ]
+                            }
+                        ]
+                    });
+                } else {
+                    return response.status(400).send({message: "Access Denied"});
+                }
+            } catch(err) {
+                return response.status(400).send({message: "Access Denied"});
             }
         });
 
