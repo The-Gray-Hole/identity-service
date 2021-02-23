@@ -28,6 +28,7 @@ interface SessDecoded {
     username: string,
     useremail: string,
     permissions: Array<string>,
+    tenant: string,
     uid: string,
     roles: string,
     exp: number,
@@ -275,7 +276,7 @@ export class IdentityService {
         //########## Defining Auths ##################
         this._tenant_status_auth = new Auth(
             this._tenant_status_model,
-            async function(token: string, action: string, instance_id: string) {
+            async function(token: string, body: any, action: string, instance_id: string) {
                 try {
                     var decoded = verify(token, identity_secret || "") as MainDecoded;
                     switch(action) {
@@ -295,7 +296,7 @@ export class IdentityService {
 
         this._tenant_auth = new Auth(
             this._tenant_model,
-            async function(token: string, action: string, instance_id: string) {
+            async function(token: string, body: any, action: string, instance_id: string) {
                 try {
                     var decoded = verify(token, identity_secret || "") as MainDecoded;
                     switch(action) {
@@ -315,7 +316,7 @@ export class IdentityService {
 
         this._permission_auth = new Auth(
             this._permission_model,
-            async function(token: string, action: string, instance_id: string) {
+            async function(token: string, body: any, action: string, instance_id: string) {
                 try {
                     var decoded = verify(token, identity_secret || "") as MainDecoded;
                     switch(action) {
@@ -335,7 +336,7 @@ export class IdentityService {
 
         this._role_auth = new Auth(
             this._role_model,
-            async function(token: string, action: string, instance_id: string) {
+            async function(token: string, body: any, action: string, instance_id: string) {
                 try {
                     var decoded = verify(token, identity_secret || "") as MainDecoded;
                     switch(action) {
@@ -355,7 +356,7 @@ export class IdentityService {
 
         this._user_status_auth = new Auth(
             this._user_status_model,
-            async function(token: string, action: string, instance_id: string) {
+            async function(token: string, body: any, action: string, instance_id: string) {
                 try {
                     var decoded = verify(token, identity_secret || "") as MainDecoded;
                     switch(action) {
@@ -375,7 +376,7 @@ export class IdentityService {
 
         this._user_auth = new Auth(
             this._user_model,
-            async function(token: string, action: string, instance_id: string) {
+            async function(token: string, body: any, action: string, instance_id: string) {
                 try {
                     var decoded = verify(token, identity_secret || "") as MainDecoded;
                     switch(action) {
@@ -705,6 +706,14 @@ export class IdentityService {
                         actions: [
                             "POST"
                         ]
+                    },
+                    config: {
+                        __href: [
+                            "/resources_config"
+                        ],
+                        actions: [
+                            "GET"
+                        ]
                     }
                 }
             });
@@ -729,13 +738,15 @@ export class IdentityService {
                 }
             }
             let dur = request.body.token_duration ? request.body.token_duration : 24;
+            let tenant_instance = await this._tenant_model.model.findById(user.tenant);
             let _session_token = sign({
                 exp: Math.floor(Date.now() / 1000) + (dur * 60 * 60),
                 duration: `${dur} h`,
                 uid: user._id,
                 username: user.username,
                 useremail: user.email,
-                permissions: perms
+                permissions: perms,
+                tenant: tenant_instance.tenantname
             }, this._identity_secret)
 
             response.status(200).send({
@@ -746,14 +757,15 @@ export class IdentityService {
         this._app.post('/check_permission', async (request: any, response: any) => {
             let token = request.headers['access-token'];
             let permission = request.body.permission;
+            let tenant = request.body.tenant;
             if(!token) {
                 return response.status(400).send({message: "Missing access token"});
             }
             try {
                 let decoded = verify(token, this._identity_secret || "") as SessDecoded;
-                if(decoded.permissions.includes(permission)) {
+                if(decoded.permissions.includes(permission) && decoded.tenant == tenant) {
                     return response.status(200).send({
-                        message: `The user ${decoded.username} has permission to ${permission}`,
+                        message: `The user ${decoded.username} has permission to ${permission} for tenant ${tenant}`,
                         data: {
                             duration: decoded.duration,
                             uid: decoded.uid,
@@ -821,7 +833,10 @@ export class IdentityService {
                                         type: "text",
                                         href: null,
                                         use_field: null,
-                                        actions: [],
+                                        actions: [
+                                            "filter",
+                                            "order"
+                                        ],
                                         show: true,
                                         strong: false,
                                         elipsis: true,
@@ -851,7 +866,10 @@ export class IdentityService {
                                         type: "text",
                                         href: null,
                                         use_field: null,
-                                        actions: [],
+                                        actions: [
+                                            "filter",
+                                            "order"
+                                        ],
                                         show: true,
                                         strong: false,
                                         elipsis: true,
@@ -896,7 +914,10 @@ export class IdentityService {
                                         type: "text",
                                         href: null,
                                         use_field: null,
-                                        actions: [],
+                                        actions: [
+                                            "filter",
+                                            "order"
+                                        ],
                                         show: true,
                                         strong: false,
                                         elipsis: true,
@@ -908,7 +929,9 @@ export class IdentityService {
                                         type: "reference",
                                         href: "/tenants",
                                         use_field: "tenantname",
-                                        actions: [],
+                                        actions: [
+                                            "filter_by_ref"
+                                        ],
                                         show: true,
                                         strong: false,
                                         elipsis: true,
@@ -938,7 +961,10 @@ export class IdentityService {
                                         type: "text",
                                         href: null,
                                         use_field: null,
-                                        actions: [],
+                                        actions: [
+                                            "filter",
+                                            "order"
+                                        ],
                                         show: true,
                                         strong: false,
                                         elipsis: true,
@@ -965,7 +991,9 @@ export class IdentityService {
                                         type: "reference",
                                         href: "/tenants",
                                         use_field: "tenantname",
-                                        actions: [],
+                                        actions: [
+                                            "filter_by_ref"
+                                        ],
                                         show: true,
                                         strong: false,
                                         elipsis: true,
@@ -995,7 +1023,10 @@ export class IdentityService {
                                         type: "text",
                                         href: null,
                                         use_field: null,
-                                        actions: [],
+                                        actions: [
+                                            "filter",
+                                            "order"
+                                        ],
                                         show: true,
                                         strong: false,
                                         elipsis: true,
@@ -1007,7 +1038,9 @@ export class IdentityService {
                                         type: "reference",
                                         href: "/tenants",
                                         use_field: "tenantname",
-                                        actions: [],
+                                        actions: [
+                                            "filter_by_ref"
+                                        ],
                                         show: true,
                                         strong: false,
                                         elipsis: true,
@@ -1037,7 +1070,10 @@ export class IdentityService {
                                         type: "text",
                                         href: null,
                                         use_field: null,
-                                        actions: [],
+                                        actions: [
+                                            "filter",
+                                            "order"
+                                        ],
                                         show: true,
                                         strong: false,
                                         elipsis: true,
@@ -1049,7 +1085,10 @@ export class IdentityService {
                                         type: "text",
                                         href: null,
                                         use_field: null,
-                                        actions: [],
+                                        actions: [
+                                            "filter",
+                                            "order"
+                                        ],
                                         show: true,
                                         strong: false,
                                         elipsis: true,
@@ -1103,7 +1142,9 @@ export class IdentityService {
                                         type: "reference",
                                         href: "/tenants",
                                         use_field: "tenantname",
-                                        actions: [],
+                                        actions: [
+                                            "filter_by_ref"
+                                        ],
                                         show: true,
                                         strong: false,
                                         elipsis: true,
