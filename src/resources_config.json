@@ -1,0 +1,454 @@
+{
+    "host_resources": [
+        {
+            "title": "Organization Statuses",
+            "href": "/tstatuss",
+            "instance_actions": [
+                "edit",
+                "delete"
+            ],
+            "actions_permissions": {
+                "edit": "__write__tenant_stat",
+                "delete": "__write__tenant_stat"
+            },
+            "fileds": [
+                {
+                    "db_name": "_id",
+                    "verbose_name": "Id",
+                    "type": "text",
+                    "href": null,
+                    "use_field": null,
+                    "column_actions": [],
+                    "instance_actions": [],
+                    "show": true,
+                    "strong": false,
+                    "elipsis": true,
+                    "tooltip": true
+                },
+                {
+                    "db_name": "title",
+                    "verbose_name": "Title",
+                    "type": "text",
+                    "href": null,
+                    "use_field": null,
+                    "column_actions": [
+                        "sort",
+                        "filter"
+                    ],
+                    "filed_actions": [
+                        "edit"
+                    ],
+                    "show": true,
+                    "strong": false,
+                    "elipsis": true,
+                    "tooltip": true
+                }
+            ]
+        },
+        {
+            "title": "Organizations",
+            "href": "/tenants",
+            "instance_actions": [
+                "edit",
+                "delete"
+            ],
+            "actions_permissions": {
+                "edit": "__write__tenant",
+                "delete": "__write__tenant"
+            },
+            "fileds": [
+                {
+                    "db_name": "_id",
+                    "verbose_name": "Id",
+                    "type": "text",
+                    "href": null,
+                    "use_field": null,
+                    "column_actions": [],
+                    "instance_actions": [],
+                    "show": true,
+                    "strong": false,
+                    "elipsis": true,
+                    "tooltip": true
+                },
+                {
+                    "db_name": "tenantname",
+                    "verbose_name": "Name",
+                    "type": "text",
+                    "href": null,
+                    "use_field": null,
+                    "column_actions": [
+                        "sort",
+                        "filter"
+                    ],
+                    "filed_actions": [
+                        "edit"
+                    ],
+                    "show": true,
+                    "strong": false,
+                    "elipsis": true,
+                    "tooltip": true
+                },
+                {
+                    "db_name": "status",
+                    "verbose_name": "Status",
+                    "type": "reference_list",
+                    "href": "/tstatuss",
+                    "use_field": "title",
+                    "column_actions": [],
+                    "filed_actions": [
+                        "see",
+                        "edit"
+                    ],
+                    "show": true,
+                    "strong": false,
+                    "elipsis": true,
+                    "tooltip": true
+                }
+            ]
+        }
+    ],
+    "tenant_resources": [
+        {
+            "title": "Permissions",
+            "href": "/permissions",
+            "instance_actions": [
+                "edit",
+                "delete"
+            ],
+            "actions_permissions": {
+                "edit": "__write__permission",
+                "delete": "__write__permission"
+            },
+            "fileds": [
+                {
+                    "db_name": "_id",
+                    "verbose_name": "Id",
+                    "type": "text",
+                    "href": null,
+                    "use_field": null,
+                    "column_actions": [],
+                    "instance_actions": [],
+                    "show": true,
+                    "strong": false,
+                    "elipsis": true,
+                    "tooltip": true
+                },
+                {
+                    "db_name": "title",
+                    "verbose_name": "Title",
+                    "type": "text",
+                    "href": null,
+                    "use_field": null,
+                    "column_actions": [
+                        "sort",
+                        "filter"
+                    ],
+                    "filed_actions": [
+                        "edit"
+                    ],
+                    "show": true,
+                    "strong": false,
+                    "elipsis": true,
+                    "tooltip": true
+                },
+                {
+                    "db_name": "tenant",
+                    "verbose_name": "Organization",
+                    "type": "reference",
+                    "href": "/tenants",
+                    "use_field": "tenantname",
+                    "column_actions": [
+                        "sort",
+                        "filter"
+                    ],
+                    "filed_actions": [
+                        "edit"
+                    ],
+                    "show": true,
+                    "strong": false,
+                    "elipsis": true,
+                    "tooltip": true
+                }
+            ]
+        },
+        {
+            "title": "Roles",
+            "href": "/roles",
+            "instance_actions": [
+                "edit",
+                "delete"
+            ],
+            "actions_permissions": {
+                "edit": "__write__role",
+                "delete": "__write__role"
+            },
+            "fileds": [
+                {
+                    "db_name": "_id",
+                    "verbose_name": "Id",
+                    "type": "text",
+                    "href": null,
+                    "use_field": null,
+                    "column_actions": [],
+                    "instance_actions": [],
+                    "show": true,
+                    "strong": false,
+                    "elipsis": true,
+                    "tooltip": true
+                },
+                {
+                    "db_name": "title",
+                    "verbose_name": "Title",
+                    "type": "text",
+                    "href": null,
+                    "use_field": null,
+                    "column_actions": [
+                        "sort",
+                        "filter"
+                    ],
+                    "filed_actions": [
+                        "edit"
+                    ],
+                    "show": true,
+                    "strong": false,
+                    "elipsis": true,
+                    "tooltip": true
+                },
+                {
+                    "db_name": "permissions",
+                    "verbose_name": "Permissions",
+                    "type": "reference_list",
+                    "href": "/permissions",
+                    "use_field": "title",
+                    "column_actions": [
+                        "see",
+                        "sort",
+                        "filter"
+                    ],
+                    "filed_actions": [
+                        "edit"
+                    ],
+                    "show": true,
+                    "strong": false,
+                    "elipsis": true,
+                    "tooltip": true
+                },
+                {
+                    "db_name": "tenant",
+                    "verbose_name": "Organization",
+                    "type": "reference",
+                    "href": "/tenants",
+                    "use_field": "tenantname",
+                    "column_actions": [
+                        "sort",
+                        "filter"
+                    ],
+                    "filed_actions": [
+                        "edit"
+                    ],
+                    "show": true,
+                    "strong": false,
+                    "elipsis": true,
+                    "tooltip": true
+                }
+            ]
+        },
+        {
+            "title": "User Statuses",
+            "href": "/ustatuss",
+            "instance_actions": [
+                "edit",
+                "delete"
+            ],
+            "actions_permissions": {
+                "edit": "__write__user_stat",
+                "delete": "__write__user_stat"
+            },
+            "fileds": [
+                {
+                    "db_name": "_id",
+                    "verbose_name": "Id",
+                    "type": "text",
+                    "href": null,
+                    "use_field": null,
+                    "column_actions": [],
+                    "instance_actions": [],
+                    "show": true,
+                    "strong": false,
+                    "elipsis": true,
+                    "tooltip": true
+                },
+                {
+                    "db_name": "title",
+                    "verbose_name": "Title",
+                    "type": "text",
+                    "href": null,
+                    "use_field": null,
+                    "column_actions": [
+                        "sort",
+                        "filter"
+                    ],
+                    "filed_actions": [
+                        "edit"
+                    ],
+                    "show": true,
+                    "strong": false,
+                    "elipsis": true,
+                    "tooltip": true
+                },
+                {
+                    "db_name": "tenant",
+                    "verbose_name": "Organization",
+                    "type": "reference",
+                    "href": "/tenants",
+                    "use_field": "tenantname",
+                    "column_actions": [
+                        "sort",
+                        "filter"
+                    ],
+                    "filed_actions": [
+                        "edit"
+                    ],
+                    "show": true,
+                    "strong": false,
+                    "elipsis": true,
+                    "tooltip": true
+                }
+            ]
+        },
+        {
+            "title": "Users",
+            "href": "/users",
+            "instance_actions": [
+                "edit",
+                "delete"
+            ],
+            "actions_permissions": {
+                "edit": "__write__user",
+                "delete": "__write__user"
+            },
+            "fileds": [
+                {
+                    "db_name": "_id",
+                    "verbose_name": "Id",
+                    "type": "text",
+                    "href": null,
+                    "use_field": null,
+                    "column_actions": [],
+                    "instance_actions": [],
+                    "show": true,
+                    "strong": false,
+                    "elipsis": true,
+                    "tooltip": true
+                },
+                {
+                    "db_name": "username",
+                    "verbose_name": "Username",
+                    "type": "text",
+                    "href": null,
+                    "use_field": null,
+                    "column_actions": [
+                        "sort",
+                        "filter"
+                    ],
+                    "filed_actions": [
+                        "edit"
+                    ],
+                    "show": true,
+                    "strong": false,
+                    "elipsis": true,
+                    "tooltip": true
+                },
+                {
+                    "db_name": "email",
+                    "verbose_name": "Email",
+                    "type": "text",
+                    "href": null,
+                    "use_field": null,
+                    "column_actions": [
+                        "sort",
+                        "filter"
+                    ],
+                    "filed_actions": [
+                        "edit"
+                    ],
+                    "show": true,
+                    "strong": false,
+                    "elipsis": true,
+                    "tooltip": true
+                },
+                {
+                    "db_name": "password",
+                    "verbose_name": "PassWord",
+                    "type": "text",
+                    "href": null,
+                    "use_field": null,
+                    "column_actions": [
+                        "sort",
+                        "filter"
+                    ],
+                    "filed_actions": [
+                        "edit"
+                    ],
+                    "show": true,
+                    "strong": false,
+                    "elipsis": true,
+                    "tooltip": true
+                },
+                {
+                    "db_name": "roles",
+                    "verbose_name": "Roles",
+                    "type": "reference_list",
+                    "href": "/roles",
+                    "use_field": "title",
+                    "column_actions": [
+                        "see",
+                        "sort",
+                        "filter"
+                    ],
+                    "filed_actions": [
+                        "edit"
+                    ],
+                    "show": true,
+                    "strong": false,
+                    "elipsis": true,
+                    "tooltip": true
+                },
+                {
+                    "db_name": "status",
+                    "verbose_name": "Status",
+                    "type": "reference_list",
+                    "href": "/ustatuss",
+                    "use_field": "title",
+                    "column_actions": [],
+                    "filed_actions": [
+                        "see",
+                        "edit"
+                    ],
+                    "show": true,
+                    "strong": false,
+                    "elipsis": true,
+                    "tooltip": true
+                },
+                {
+                    "db_name": "tenant",
+                    "verbose_name": "Organization",
+                    "type": "reference",
+                    "href": "/tenants",
+                    "use_field": "tenantname",
+                    "column_actions": [
+                        "sort",
+                        "filter"
+                    ],
+                    "filed_actions": [
+                        "edit"
+                    ],
+                    "show": true,
+                    "strong": false,
+                    "elipsis": true,
+                    "tooltip": true
+                }
+            ]
+        }
+    ]
+}
