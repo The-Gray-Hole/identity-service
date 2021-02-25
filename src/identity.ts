@@ -15,14 +15,6 @@ var validateEmail = function(email: string) {
     return re.test(email)
 };
 
-interface MainDecoded {
-    permissions: Array<string>,
-    role: Array<string>,
-    user: Array<string>,
-    exp: number,
-    iat: number
-}
-
 interface SessDecoded {
     duration: string,
     username: string,
@@ -33,10 +25,6 @@ interface SessDecoded {
     roles: string,
     exp: number,
     iat: number
-}
-
-interface RouterCallback {
-    (resource: Resources, action: string, data: any): void;
 }
 
 export enum Resources {
@@ -278,7 +266,7 @@ export class IdentityService {
             this._tenant_status_model,
             async function(token: string, body: any, action: string, instance_id: string) {
                 try {
-                    var decoded = verify(token, identity_secret || "") as MainDecoded;
+                    var decoded = verify(token, identity_secret || "") as SessDecoded;
                     switch(action) {
                         case "FINDALL": case "FINDONE":
                             return decoded.permissions.includes("__read__tenant_stat");
@@ -298,7 +286,7 @@ export class IdentityService {
             this._tenant_model,
             async function(token: string, body: any, action: string, instance_id: string) {
                 try {
-                    var decoded = verify(token, identity_secret || "") as MainDecoded;
+                    var decoded = verify(token, identity_secret || "") as SessDecoded;
                     switch(action) {
                         case "FINDALL": case "FINDONE":
                             return decoded.permissions.includes("__read__tenant");
@@ -316,15 +304,35 @@ export class IdentityService {
 
         this._permission_auth = new Auth(
             this._permission_model,
-            async function(token: string, body: any, action: string, instance_id: string) {
+            async (token: string, body: any, action: string, instance_id: string) => {
                 try {
-                    var decoded = verify(token, identity_secret || "") as MainDecoded;
+                    var decoded = verify(token, identity_secret || "") as SessDecoded;
+                    var instance = await this._permission_model.model.findById(instance_id);
+                    var host = await this._tenant_model.model.findOne({tenantname: "host"});
+
+                    var has_read_perm = decoded.permissions.includes("__read__permission");
+                    var has_write_perm = decoded.permissions.includes("__write__permission");
+
                     switch(action) {
-                        case "FINDALL": case "FINDONE":
-                            return decoded.permissions.includes("__read__permission");
+                        case "FINDALL":
+                            return has_read_perm;
                             break;
-                        case "CREATE": case "UPDATE": case "DELETE":
-                            return decoded.permissions.includes("__write__permission");
+                        case "FINDONE":
+                            return has_read_perm && (decoded.tenant == host._id || decoded.tenant == instance.tenant);
+                            break;
+                        case "CREATE":
+                            return has_write_perm && (decoded.tenant == host._id || decoded.tenant == body.tenant);
+                        case "UPDATE": case "DELETE":
+                            return (
+                                has_write_perm &&
+                                (
+                                    decoded.tenant == host._id ||
+                                    (
+                                        decoded.tenant == instance.tenant &&
+                                        (!body.tenant || body.tenant == decoded.tenant)
+                                    )
+                                )
+                            );
                             break;
                     }
                 } catch(err) {
@@ -336,15 +344,56 @@ export class IdentityService {
 
         this._role_auth = new Auth(
             this._role_model,
-            async function(token: string, body: any, action: string, instance_id: string) {
+            async (token: string, body: any, action: string, instance_id: string) => {
                 try {
-                    var decoded = verify(token, identity_secret || "") as MainDecoded;
+                    var decoded = verify(token, identity_secret || "") as SessDecoded;
+                    var instance = await this._role_model.model.findById(instance_id);
+                    var host = await this._tenant_model.model.findOne({tenantname: "host"});
+
+                    var has_read_perm = decoded.permissions.includes("__read__role");
+                    var has_write_perm = decoded.permissions.includes("__write__role");
+
+                    var perms_ok = true;
+                    if(body.permissions) {
+                        for(let p of body.permissions) {
+                            let perm_instance = await this._permission_model.model.findById(p);
+                            if(perm_instance.tenant != decoded.tenant) {
+                                perms_ok = false;
+                                break;
+                            }
+                        }
+                    }
+
                     switch(action) {
-                        case "FINDALL": case "FINDONE":
-                            return decoded.permissions.includes("__read__role");
+                        case "FINDALL":
+                            return has_read_perm;
                             break;
-                        case "CREATE": case "UPDATE": case "DELETE":
-                            return decoded.permissions.includes("__write__role");
+                        case "FINDONE":
+                            return has_read_perm && (decoded.tenant == host._id || decoded.tenant == instance.tenant);
+                            break;
+                        case "CREATE":
+                            return (
+                                has_write_perm &&
+                                (
+                                    decoded.tenant == host._id ||
+                                    (
+                                        decoded.tenant == body.tenant &&
+                                        perms_ok
+                                    )
+                                ) 
+                            );
+                        case "UPDATE": case "DELETE":
+                            return (
+                                has_write_perm &&
+                                (
+                                    decoded.tenant == host._id ||
+                                    (
+                                        decoded.tenant == instance.tenant &&
+                                        (!body.tenant || body.tenant == decoded.tenant) &&
+                                        perms_ok
+                                    )
+                                )
+                            );
                             break;
                     }
                 } catch(err) {
@@ -356,15 +405,35 @@ export class IdentityService {
 
         this._user_status_auth = new Auth(
             this._user_status_model,
-            async function(token: string, body: any, action: string, instance_id: string) {
+            async (token: string, body: any, action: string, instance_id: string) => {
                 try {
-                    var decoded = verify(token, identity_secret || "") as MainDecoded;
+                    var decoded = verify(token, identity_secret || "") as SessDecoded;
+                    var instance = await this._user_status_model.model.findById(instance_id);
+                    var host = await this._tenant_model.model.findOne({tenantname: "host"});
+
+                    var has_read_perm = decoded.permissions.includes("__read__user_stat");
+                    var has_write_perm = decoded.permissions.includes("__write__user_stat");
+
                     switch(action) {
-                        case "FINDALL": case "FINDONE":
-                            return decoded.permissions.includes("__read__user_stat");
+                        case "FINDALL":
+                            return has_read_perm;
                             break;
-                        case "CREATE": case "UPDATE": case "DELETE":
-                            return decoded.permissions.includes("__write__user_stat");
+                        case "FINDONE":
+                            return has_read_perm && (decoded.tenant == host._id || decoded.tenant == instance.tenant);
+                            break;
+                        case "CREATE":
+                            return has_write_perm && (decoded.tenant == host._id || decoded.tenant == body.tenant);
+                        case "UPDATE": case "DELETE":
+                            return (
+                                has_write_perm &&
+                                (
+                                    decoded.tenant == host._id ||
+                                    (
+                                        decoded.tenant == instance.tenant &&
+                                        (!body.tenant || body.tenant == decoded.tenant)
+                                    )
+                                ) 
+                            );
                             break;
                     }
                 } catch(err) {
@@ -376,15 +445,68 @@ export class IdentityService {
 
         this._user_auth = new Auth(
             this._user_model,
-            async function(token: string, body: any, action: string, instance_id: string) {
+            async (token: string, body: any, action: string, instance_id: string) => {
                 try {
-                    var decoded = verify(token, identity_secret || "") as MainDecoded;
+                    var decoded = verify(token, identity_secret || "") as SessDecoded;
+                    var instance = await this._user_model.model.findById(instance_id);
+                    var host = await this._tenant_model.model.findOne({tenantname: "host"});
+
+                    var has_read_perm = decoded.permissions.includes("__read__user");
+                    var has_write_perm = decoded.permissions.includes("__write__user");
+
+                    var roles_ok = true;
+                    var status_ok = true;
+                    if(body.roles) {
+                        for(let r of body.roles) {
+                            let role_instance = await this._role_model.model.findById(r);
+                            if(role_instance.tenant != decoded.tenant) {
+                                roles_ok = false;
+                                break;
+                            }
+                        }
+                    }
+                    if(body.status) {
+                        for(let s of body.status) {
+                            let status_instance = await this._user_status_model.model.findById(s);
+                            if(status_instance.tenant != decoded.tenant) {
+                                status_ok = false;
+                                break;
+                            }
+                        }
+                    }
+
                     switch(action) {
-                        case "FINDALL": case "FINDONE":
-                            return decoded.permissions.includes("__read__user");
+                        case "FINDALL":
+                            return has_read_perm;
                             break;
-                        case "CREATE": case "UPDATE": case "DELETE":
-                            return decoded.permissions.includes("__write__user");
+                        case "FINDONE":
+                            return has_read_perm && (decoded.tenant == host._id || decoded.tenant == instance.tenant);
+                            break;
+                        case "CREATE":
+                            return (
+                                has_write_perm &&
+                                (
+                                    decoded.tenant == host._id ||
+                                    (
+                                        decoded.tenant == body.tenant &&
+                                        roles_ok &&
+                                        status_ok
+                                    )
+                                )
+                            );
+                        case "UPDATE": case "DELETE":
+                            return (
+                                has_write_perm &&
+                                (
+                                    decoded.tenant == host._id ||
+                                    (
+                                        decoded.tenant == instance.tenant &&
+                                        (!body.tenant || body.tenant == decoded.tenant) &&
+                                        roles_ok &&
+                                        status_ok
+                                    )
+                                )
+                            )
                             break;
                     }
                 } catch(err) {
@@ -567,10 +689,24 @@ export class IdentityService {
             .map( (val: any) => {
                 return val._id;
             });
+            let tenant_adm_perm = __base_perms.filter( (val: any) => {
+                return (
+                    val.title != "__read__tenant_stat" &&
+                    val.title != "__write__tenant_stat" &&
+                    val.title != "__read__tenant" &&
+                    val.title != "__write__tenant" &&
+                    val.title != "__read__resources_config"
+                );
+            })
             let new_roles = [
                 {
                     title: "__identity_admin",
                     permissions : __base_perms,
+                    tenant: __host_tenant
+                },
+                {
+                    title: "__tenant_admin",
+                    permissions : tenant_adm_perm,
                     tenant: __host_tenant
                 }
             ];
@@ -653,7 +789,7 @@ export class IdentityService {
         });
     }
 
-    public route(resources_callback?: RouterCallback) {
+    public route() {
 
         this._app.get('/', (request: any, response: any) => {
             request;
@@ -738,7 +874,6 @@ export class IdentityService {
                 }
             }
             let dur = request.body.token_duration ? request.body.token_duration : 24;
-            let tenant_instance = await this._tenant_model.model.findById(user.tenant);
             let _session_token = sign({
                 exp: Math.floor(Date.now() / 1000) + (dur * 60 * 60),
                 duration: `${dur} h`,
@@ -746,7 +881,7 @@ export class IdentityService {
                 username: user.username,
                 useremail: user.email,
                 permissions: perms,
-                tenant: tenant_instance.tenantname
+                tenant: user.tenant,
             }, this._identity_secret)
 
             response.status(200).send({
@@ -814,7 +949,7 @@ export class IdentityService {
                             {
                                 title: "Tenant Statuses",
                                 href: "/tstatuss",
-                                fileds: [
+                                fields: [
                                     {
                                         db_name: "_id",
                                         verbose_name: "Id",
@@ -847,7 +982,7 @@ export class IdentityService {
                             {
                                 title: "Tenants",
                                 href: "/tenants",
-                                fileds: [
+                                fields: [
                                     {
                                         db_name: "_id",
                                         verbose_name: "Id",
@@ -895,7 +1030,7 @@ export class IdentityService {
                             {
                                 title: "Permissions",
                                 href: "/permissions",
-                                fileds: [
+                                fields: [
                                     {
                                         db_name: "_id",
                                         verbose_name: "Id",
@@ -942,7 +1077,7 @@ export class IdentityService {
                             {
                                 title: "Roles",
                                 href: "/roles",
-                                fileds: [
+                                fields: [
                                     {
                                         db_name: "_id",
                                         verbose_name: "Id",
@@ -1004,7 +1139,7 @@ export class IdentityService {
                             {
                                 title: "User Statuses",
                                 href: "/ustatuss",
-                                fileds: [
+                                fields: [
                                     {
                                         db_name: "_id",
                                         verbose_name: "Id",
@@ -1051,7 +1186,7 @@ export class IdentityService {
                             {
                                 title: "Users",
                                 href: "/users",
-                                fileds: [
+                                fields: [
                                     {
                                         db_name: "_id",
                                         verbose_name: "Id",
@@ -1162,39 +1297,87 @@ export class IdentityService {
             }
         });
 
-        this._tenant_status_router.route(function(action: string, data: any) {
-            if(resources_callback) {
-                resources_callback(Resources.TenantStatus, action, data);
+        this._tenant_status_router.route( async (action: string, request: any, data: any) => {});
+
+        this._tenant_router.route( async (action: string, request: any, data: any) => {});
+
+        this._permission_router.route( async (action: string, request: any, data: any) => {
+            try{
+                if(action != "FINDALL") return data;
+
+                var host = await this._tenant_model.model.findOne({tenantname: "host"});
+                let token = request.headers["access-token"];
+                var decoded = verify(token, this._identity_secret || "") as SessDecoded;
+
+                if(decoded.tenant == host._id) return data;
+
+                let instances = data as any[];
+                instances = instances.filter( (val: any) => {
+                    return val.tenant == decoded.tenant;
+                });
+                return instances;
+            } catch {
+                return null;
             }
         });
 
-        this._tenant_router.route(function(action: string, data: any) {
-            if(resources_callback) {
-                resources_callback(Resources.Tenant, action, data);
+        this._role_router.route( async (action: string, request: any, data: any) => {
+            try{
+                if(action != "FINDALL") return data;
+
+                var host = await this._tenant_model.model.findOne({tenantname: "host"});
+                let token = request.headers["access-token"];
+                var decoded = verify(token, this._identity_secret || "") as SessDecoded;
+
+                if(decoded.tenant == host._id) return data;
+
+                let instances = data as any[];
+                instances = instances.filter( (val: any) => {
+                    return val.tenant == decoded.tenant;
+                });
+                return instances;
+            } catch {
+                return null;
             }
         });
 
-        this._permission_router.route(function(action: string, data: any) {
-            if(resources_callback) {
-                resources_callback(Resources.Permission, action, data);
+        this._user_status_router.route( async (action: string, request: any, data: any) => {
+            try{
+                if(action != "FINDALL") return data;
+
+                var host = await this._tenant_model.model.findOne({tenantname: "host"});
+                let token = request.headers["access-token"];
+                var decoded = verify(token, this._identity_secret || "") as SessDecoded;
+
+                if(decoded.tenant == host._id) return data;
+
+                let instances = data as any[];
+                instances = instances.filter( (val: any) => {
+                    return val.tenant == decoded.tenant;
+                });
+                return instances;
+            } catch {
+                return null;
             }
         });
 
-        this._role_router.route(function(action: string, data: any) {
-            if(resources_callback) {
-                resources_callback(Resources.Role, action, data);
-            }
-        });
+        this._user_router.route( async (action: string, request: any, data: any) => {
+            try{
+                if(action != "FINDALL") return data;
 
-        this._user_status_router.route(function(action: string, data: any) {
-            if(resources_callback) {
-                resources_callback(Resources.UserStatus, action, data);
-            }
-        });
+                var host = await this._tenant_model.model.findOne({tenantname: "host"});
+                let token = request.headers["access-token"];
+                var decoded = verify(token, this._identity_secret || "") as SessDecoded;
 
-        this._user_router.route(function(action: string, data: any) {
-            if(resources_callback) {
-                resources_callback(Resources.User, action, data);
+                if(decoded.tenant == host._id) return data;
+
+                let instances = data as any[];
+                instances = instances.filter( (val: any) => {
+                    return val.tenant == decoded.tenant;
+                });
+                return instances;
+            } catch {
+                return null;
             }
         });
     }
