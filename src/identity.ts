@@ -678,8 +678,9 @@ export class IdentityService {
             await this._permission_model.model.create(new_perms);
 
             //########## Creating base roles ##################
-            let __base_perms = await this._permission_model.model.find();
-            __base_perms = __base_perms
+            let __all_perms = await this._permission_model.model.find();
+
+            let __admin_perms = __all_perms
             .filter( (val: any) => {
                 return new_perms.map( (val1: any) => {
                     return val1.title;
@@ -689,19 +690,33 @@ export class IdentityService {
             .map( (val: any) => {
                 return val._id;
             });
-            let tenant_adm_perm = __base_perms.filter( (val: any) => {
-                return (
-                    val.title != "__read__tenant_stat" &&
-                    val.title != "__write__tenant_stat" &&
-                    val.title != "__read__tenant" &&
-                    val.title != "__write__tenant" &&
-                    val.title != "__read__resources_config"
-                );
+
+            let tenant_adm_perm = __all_perms
+            .filter( (val: any) => {
+                return new_perms
+                .map( (val1: any) => {
+                    return val1.title;
+                })
+                .filter( (val1: any) => {
+                    return ![
+                        "__read__tenant_stat",
+                        "__write__tenant_stat",
+                        "__read__tenant",
+                        "__write__tenant",
+                        "__read__resources_config"
+                    ].includes(val1);
+                })
+                .includes(val.title) &&
+                String(val.tenant) == String(__host_tenant);
             })
+            .map( (val: any) => {
+                return val._id;
+            });
+
             let new_roles = [
                 {
                     title: "__identity_admin",
-                    permissions : __base_perms,
+                    permissions : __admin_perms,
                     tenant: __host_tenant
                 },
                 {
@@ -744,22 +759,8 @@ export class IdentityService {
             await this._user_status_model.model.create(new_user_status);
 
             //########## Creating base users ##################
-            let __active_ustatus = await this._user_status_model.model.find();
-            __active_ustatus = __active_ustatus
-            .filter( (val: any) => {
-                return val.title == "__active" && String(val.tenant) == String(__host_tenant);
-            })[0]._id;
-            let __base_roles = await this._role_model.model.find();
-            __base_roles = __base_roles
-            .filter( (val: any) => {
-                return new_roles.map( (val1: any) => {
-                    return val1.title;
-                }).includes(val.title) &&
-                String(val.tenant) == String(__host_tenant);
-            })
-            .map( (val: any) => {
-                return val._id;
-            });
+            let __active_ustatus = await this._user_status_model.model.findOne({title: "__active", tenant: __host_tenant});
+            let admin_role = await this._role_model.model.findOne({title: "__identity_admin", tenant: __host_tenant});
             let __users = await this._user_model.model.find();
             __users = __users
             .filter( (val: any) => {
@@ -773,8 +774,8 @@ export class IdentityService {
                     username: this._admin_username,
                     email : this._admin_email,
                     password: hashSync(this._admin_password, 10),
-                    roles: __base_roles,
-                    status: __active_ustatus,
+                    roles: [admin_role._id],
+                    status: [__active_ustatus],
                     tenant: __host_tenant
                 }
             ];
@@ -856,37 +857,41 @@ export class IdentityService {
         });
 
         this._app.post('/login', async (request: any, response: any) => {
-            let user = await this._user_model.model.findOne({username: request.body.username}).exec();
-            if(!user) {
-                return response.status(400).send({message: "Invalid credentials"});
-            }
-            if(!compareSync(request.body.password, user.password)) {
-                return response.status(400).send({message: "Invalid credentials"});
-            }
-            let perms = [];
-            for(let i = 0; i < user.roles.length; i++) {
-                let role = await this._role_model.model.findById(user.roles[i]);
-                if(String(role.tenant) != String(user.tenant)) continue;
-                for(let j = 0; j < role.permissions.length; j++) {
-                    let p = await this._permission_model.model.findById(role.permissions[j]);
-                    if(String(p.tenant) != String(user.tenant)) continue;
-                    perms.push(p.title);
+            try {
+                let tenant = await this._tenant_model.model.findOne({tenantname: request.body.tenantname});
+                let user = await this._user_model.model.findOne({username: request.body.username, tenant: tenant._id});
+                if(!user) {
+                    return response.status(400).send({message: "Invalid credentials"});
                 }
-            }
-            let dur = request.body.token_duration ? request.body.token_duration : 24;
-            let _session_token = sign({
-                exp: Math.floor(Date.now() / 1000) + (dur * 60 * 60),
-                duration: `${dur} h`,
-                uid: user._id,
-                username: user.username,
-                useremail: user.email,
-                permissions: perms,
-                tenant: user.tenant,
-            }, this._identity_secret)
+                if(!compareSync(request.body.password, user.password)) {
+                    return response.status(400).send({message: "Invalid credentials"});
+                }
+                let perms = [];
+                for(let i = 0; i < user.roles.length; i++) {
+                    let role = await this._role_model.model.findById(user.roles[i]);
+                    for(let j = 0; j < role.permissions.length; j++) {
+                        let p = await this._permission_model.model.findById(role.permissions[j]);
+                        perms.push(p.title);
+                    }
+                }
+                let dur = request.body.token_duration ? request.body.token_duration : 24;
+                let _session_token = sign({
+                    exp: Math.floor(Date.now() / 1000) + (dur * 60 * 60),
+                    duration: `${dur} h`,
+                    uid: user._id,
+                    username: user.username,
+                    useremail: user.email,
+                    permissions: perms,
+                    tenant: user.tenant,
+                }, this._identity_secret)
 
-            response.status(200).send({
-                session_token: _session_token
-            });
+                response.status(200).send({
+                    session_token: _session_token
+                });
+            } catch {
+                return response.status(400).send({message: "Invalid credentials"});
+            }
+            
         });
 
         this._app.post('/check_permission', async (request: any, response: any) => {
