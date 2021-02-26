@@ -11,7 +11,7 @@
                 "edit": "__write__tenant_stat",
                 "delete": "__write__tenant_stat"
             },
-            "fileds": [
+            "fields": [
                 {
                     "db_name": "_id",
                     "verbose_name": "Id",
@@ -35,7 +35,7 @@
                         "sort",
                         "filter"
                     ],
-                    "filed_actions": [
+                    "field_actions": [
                         "edit"
                     ],
                     "show": true,
@@ -56,7 +56,7 @@
                 "edit": "__write__tenant",
                 "delete": "__write__tenant"
             },
-            "fileds": [
+            "fields": [
                 {
                     "db_name": "_id",
                     "verbose_name": "Id",
@@ -80,7 +80,7 @@
                         "sort",
                         "filter"
                     ],
-                    "filed_actions": [
+                    "field_actions": [
                         "edit"
                     ],
                     "show": true,
@@ -95,7 +95,7 @@
                     "href": "/tstatuss",
                     "use_field": "title",
                     "column_actions": [],
-                    "filed_actions": [
+                    "field_actions": [
                         "see",
                         "edit"
                     ],
@@ -119,7 +119,7 @@
                 "edit": "__write__permission",
                 "delete": "__write__permission"
             },
-            "fileds": [
+            "fields": [
                 {
                     "db_name": "_id",
                     "verbose_name": "Id",
@@ -143,7 +143,7 @@
                         "sort",
                         "filter"
                     ],
-                    "filed_actions": [
+                    "field_actions": [
                         "edit"
                     ],
                     "show": true,
@@ -161,7 +161,7 @@
                         "sort",
                         "filter"
                     ],
-                    "filed_actions": [
+                    "field_actions": [
                         "edit"
                     ],
                     "show": true,
@@ -182,7 +182,7 @@
                 "edit": "__write__role",
                 "delete": "__write__role"
             },
-            "fileds": [
+            "fields": [
                 {
                     "db_name": "_id",
                     "verbose_name": "Id",
@@ -206,7 +206,7 @@
                         "sort",
                         "filter"
                     ],
-                    "filed_actions": [
+                    "field_actions": [
                         "edit"
                     ],
                     "show": true,
@@ -225,7 +225,7 @@
                         "sort",
                         "filter"
                     ],
-                    "filed_actions": [
+                    "field_actions": [
                         "edit"
                     ],
                     "show": true,
@@ -243,7 +243,7 @@
                         "sort",
                         "filter"
                     ],
-                    "filed_actions": [
+                    "field_actions": [
                         "edit"
                     ],
                     "show": true,
@@ -264,7 +264,7 @@
                 "edit": "__write__user_stat",
                 "delete": "__write__user_stat"
             },
-            "fileds": [
+            "fields": [
                 {
                     "db_name": "_id",
                     "verbose_name": "Id",
@@ -288,7 +288,7 @@
                         "sort",
                         "filter"
                     ],
-                    "filed_actions": [
+                    "field_actions": [
                         "edit"
                     ],
                     "show": true,
@@ -306,7 +306,7 @@
                         "sort",
                         "filter"
                     ],
-                    "filed_actions": [
+                    "field_actions": [
                         "edit"
                     ],
                     "show": true,
@@ -327,7 +327,7 @@
                 "edit": "__write__user",
                 "delete": "__write__user"
             },
-            "fileds": [
+            "fields": [
                 {
                     "db_name": "_id",
                     "verbose_name": "Id",
@@ -351,7 +351,7 @@
                         "sort",
                         "filter"
                     ],
-                    "filed_actions": [
+                    "field_actions": [
                         "edit"
                     ],
                     "show": true,
@@ -369,7 +369,7 @@
                         "sort",
                         "filter"
                     ],
-                    "filed_actions": [
+                    "field_actions": [
                         "edit"
                     ],
                     "show": true,
@@ -387,7 +387,7 @@
                         "sort",
                         "filter"
                     ],
-                    "filed_actions": [
+                    "field_actions": [
                         "edit"
                     ],
                     "show": true,
@@ -406,7 +406,7 @@
                         "sort",
                         "filter"
                     ],
-                    "filed_actions": [
+                    "field_actions": [
                         "edit"
                     ],
                     "show": true,
@@ -421,7 +421,7 @@
                     "href": "/ustatuss",
                     "use_field": "title",
                     "column_actions": [],
-                    "filed_actions": [
+                    "field_actions": [
                         "see",
                         "edit"
                     ],
@@ -440,7 +440,7 @@
                         "sort",
                         "filter"
                     ],
-                    "filed_actions": [
+                    "field_actions": [
                         "edit"
                     ],
                     "show": true,
