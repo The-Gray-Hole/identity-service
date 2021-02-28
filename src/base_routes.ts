@@ -79,6 +79,7 @@ export function get_login
     user_model: MongoModel,
     role_model: MongoModel,
     perm_model: MongoModel,
+    ustatus_model: MongoModel,
     tenant_model: MongoModel,
     secret: string
 )
@@ -94,21 +95,28 @@ export function get_login
                 return response.status(400).send({message: "Invalid credentials"});
             }
             let perms = [];
+            let ustatuses = [];
             for(let i = 0; i < user.roles.length; i++) {
                 let role = await role_model.model.findById(user.roles[i]);
                 for(let j = 0; j < role.permissions.length; j++) {
                     let p = await perm_model.model.findById(role.permissions[j]);
-                    perms.push(p.title);
+                    let t = await tenant_model.model.findById(p.tenant);
+                    perms.push(`${p.title} in ${t.tenantname}`);
                 }
             }
-            let dur = request.body.token_duration ? request.body.token_duration : 24;
+            for(let i = 0; i < user.status.length; i++) {
+                let s = await ustatus_model.model.findById(user.status[i]);
+                let t = await tenant_model.model.findById(s.tenant);
+                ustatuses.push(`${s.title} in ${t.tenantname}`);
+            }
             let _session_token = sign({
-                exp: Math.floor(Date.now() / 1000) + (dur * 60 * 60),
-                duration: `${dur} h`,
+                exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60),
+                duration: `24 h`,
                 uid: user._id,
                 username: user.username,
                 useremail: user.email,
                 permissions: perms,
+                status: ustatuses,
                 tenant: user.tenant,
             }, secret)
 
@@ -121,7 +129,7 @@ export function get_login
     }
 }
 
-export function get_check_perm
+export function get_check_user_perm
 (
     secret: string
 )
@@ -129,21 +137,44 @@ export function get_check_perm
     return async function(request: any, response: any) {
         let token = request.headers['access-token'];
             let permission = request.body.permission;
-            let tenant = request.body.tenant;
+            let tenantname = request.body.tenantname;
             if(!token) {
                 return response.status(400).send({message: "Missing access token"});
             }
             try {
                 let decoded = verify(token, secret || "") as SessDecoded;
-                if(decoded.permissions.includes(permission) && decoded.tenant == tenant) {
+                if(decoded.permissions.includes(`${permission} in ${tenantname}`)) {
                     return response.status(200).send({
-                        message: `The user ${decoded.username} has permission to ${permission} for tenant ${tenant}`,
-                        data: {
-                            duration: decoded.duration,
-                            uid: decoded.uid,
-                            username: decoded.username,
-                            useremail: decoded.useremail
-                        }
+                        message: `The user ${decoded.username} has permission to ${permission} in ${tenantname}`,
+                        data: decoded
+                    });
+                } else {
+                    return response.status(400).send({message: "Access Denied"});
+                }
+            } catch(err) {
+                return response.status(400).send({message: "Access Denied"});
+            }
+    }
+}
+
+export function get_check_user_status
+(
+    secret: string
+)
+{
+    return async function(request: any, response: any) {
+        let token = request.headers['access-token'];
+            let status = request.body.status;
+            let tenantname = request.body.tenantname;
+            if(!token) {
+                return response.status(400).send({message: "Missing access token"});
+            }
+            try {
+                let decoded = verify(token, secret || "") as SessDecoded;
+                if(decoded.status.includes(`${status} in ${tenantname}`)) {
+                    return response.status(200).send({
+                        message: `The user ${decoded.username} has the status ${status} in ${tenantname}`,
+                        data: decoded
                     });
                 } else {
                     return response.status(400).send({message: "Access Denied"});

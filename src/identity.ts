@@ -22,7 +22,8 @@ import { get_ustatus_auth } from './base_auths';
 import { get_user_auth } from './base_auths';
 import { get_root } from './base_routes';
 import { get_login } from './base_routes';
-import { get_check_perm } from './base_routes';
+import { get_check_user_perm } from './base_routes';
+import { get_check_user_status } from './base_routes';
 import { get_get_uid } from './base_routes';
 import { get_resources_conf } from './base_routes';
 import { get_tstatus_callback } from './routers_callbacks';
@@ -188,9 +189,9 @@ export class IdentityService {
     public route() {
 
         this._app.get('/', get_root(this._app_name));
-        this._app.post('/login', get_login(this._user_model, this._role_model, this._permission_model, this._tenant_model, this._identity_secret));
-        this._app.post('/check_permission', get_check_perm(this._identity_secret));
-        this._app.post('/get_uid', get_get_uid(this._identity_secret));
+        this._app.post('/login', get_login(this._user_model, this._role_model, this._permission_model, this._user_status_model, this._tenant_model, this._identity_secret));
+        this._app.post('/check/user/permission', get_check_user_perm(this._identity_secret));
+        this._app.post('/check/user/status', get_check_user_status(this._identity_secret));
         this._app.get('/resources_config', get_resources_conf(this._tenant_model, this._identity_secret, this._resources_config));
 
         this._tenant_status_router.route(get_tstatus_callback());

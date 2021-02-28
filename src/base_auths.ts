@@ -8,6 +8,7 @@ export interface SessDecoded {
     username: string,
     useremail: string,
     permissions: Array<string>,
+    status: Array<string>,
     tenant: string,
     uid: string,
     roles: string,
@@ -23,10 +24,10 @@ export function get_tstatus_auth(model: MongoModel, secret: string, free_actions
                 var decoded = verify(token, secret || "") as SessDecoded;
                 switch(action) {
                     case "FINDALL": case "FINDONE":
-                        return decoded.permissions.includes("__read__tenant_stat");
+                        return decoded.permissions.includes("__read__tenant_stat in host");
                         break;
                     case "CREATE": case "UPDATE": case "DELETE":
-                        return decoded.permissions.includes("__write__tenant_stat");
+                        return decoded.permissions.includes("__write__tenant_stat in host");
                         break;
                 }
             } catch(err) {
@@ -45,10 +46,10 @@ export function get_tenant_auth(model: MongoModel, secret: string, free_actions?
                 var decoded = verify(token, secret || "") as SessDecoded;
                 switch(action) {
                     case "FINDALL": case "FINDONE":
-                        return decoded.permissions.includes("__read__tenant");
+                        return decoded.permissions.includes("__read__tenant in host");
                         break;
                     case "CREATE": case "UPDATE": case "DELETE":
-                        return decoded.permissions.includes("__write__tenant");
+                        return decoded.permissions.includes("__write__tenant in host");
                         break;
                 }
             } catch(err) {
@@ -68,8 +69,8 @@ export function get_permission_auth(model: MongoModel, tenant_model: MongoModel,
                 var instance = await model.model.findById(instance_id);
                 var host = await tenant_model.model.findOne({tenantname: "host"});
 
-                var has_read_perm = decoded.permissions.includes("__read__permission");
-                var has_write_perm = decoded.permissions.includes("__write__permission");
+                var has_read_perm = decoded.permissions.includes("__read__permission in host");
+                var has_write_perm = decoded.permissions.includes("__write__permission in host");
 
                 switch(action) {
                     case "FINDALL":
@@ -110,8 +111,8 @@ export function get_role_auth(model: MongoModel, tenant_model: MongoModel, perm_
                 var instance = await model.model.findById(instance_id);
                 var host = await tenant_model.model.findOne({tenantname: "host"});
 
-                var has_read_perm = decoded.permissions.includes("__read__role");
-                var has_write_perm = decoded.permissions.includes("__write__role");
+                var has_read_perm = decoded.permissions.includes("__read__role in host");
+                var has_write_perm = decoded.permissions.includes("__write__role in host");
 
                 var perms_ok = true;
                 if(body.permissions) {
@@ -173,8 +174,8 @@ export function get_ustatus_auth(model: MongoModel, tenant_model: MongoModel, se
                 var instance = await model.model.findById(instance_id);
                 var host = await tenant_model.model.findOne({tenantname: "host"});
 
-                var has_read_perm = decoded.permissions.includes("__read__user_stat");
-                var has_write_perm = decoded.permissions.includes("__write__user_stat");
+                var has_read_perm = decoded.permissions.includes("__read__user_stat in host");
+                var has_write_perm = decoded.permissions.includes("__write__user_stat in host");
 
                 switch(action) {
                     case "FINDALL":
@@ -215,8 +216,8 @@ export function get_user_auth(model: MongoModel, tenant_model: MongoModel, role_
                 var instance = await model.model.findById(instance_id);
                 var host = await tenant_model.model.findOne({tenantname: "host"});
 
-                var has_read_perm = decoded.permissions.includes("__read__user");
-                var has_write_perm = decoded.permissions.includes("__write__user");
+                var has_read_perm = decoded.permissions.includes("__read__user in host");
+                var has_write_perm = decoded.permissions.includes("__write__user in host");
 
                 var roles_ok = true;
                 var status_ok = true;

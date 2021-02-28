@@ -203,7 +203,7 @@ export async function create_initial_data(
     let active_ustatus = await ustat_mod.model.findOne({title: "__active"});
     active_ustatus = active_ustatus._id;
 
-    // ********* User Statuses ***********
+    // ********* Users ***********
     let new_users = [
         {
             username: admin_username,
