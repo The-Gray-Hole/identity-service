@@ -38,7 +38,7 @@ export function get_root
                 },
                 resources_one: {
                     __href: [
-                        "/tstatuss:tstatusid",
+                        "/tstatuss/:tstatusid",
                         "/tenants/:tenantid",
                         "/permissions/permissionid:",
                         "/roles/:roleid",
@@ -54,8 +54,8 @@ export function get_root
                 auth: {
                     __href: [
                         "/login",
-                        "/check_permission",
-                        "/get_uid"
+                        "/check/user/permission",
+                        "/check/user/status"
                     ],
                     actions: [
                         "POST"
