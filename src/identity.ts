@@ -7,7 +7,7 @@ import { valid_actions } from 'rest-mongoose';
 import { urlencoded, json } from 'body-parser';
 import { connect } from 'mongoose';
 
-import { create_initial_data } from './tools';
+import { create_initial_data } from './base_data';
 import { get_tstatus_model } from './base_models';
 import { get_tenant_model } from './base_models';
 import { get_permission_model } from './base_models';

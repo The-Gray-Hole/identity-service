@@ -36,6 +36,15 @@ export async function create_initial_data(
         },
         {
             title: "__inactive"
+        },
+        {
+            title: "__admin"
+        },
+        {
+            title: "__free_plan"
+        },
+        {
+            title: "__pro_plan"
         }
     ]
     .filter( (val: any) => {
@@ -44,13 +53,15 @@ export async function create_initial_data(
 
     await tstatus_mod.model.create(new_tstatus);
     let active_tstatus = await tstatus_mod.model.findOne({title: "__active"});
+    let admin_tstatus = await tstatus_mod.model.findOne({title: "__admin"});
     active_tstatus = active_tstatus._id;
+    admin_tstatus = admin_tstatus._id;
 
     // ********* Tenants ***********
     let new_tenants = [
         {
             tenantname: "host",
-            status: active_tstatus
+            status: [active_tstatus, admin_tstatus]
         }
     ]
     .filter( (val: any) => {

@@ -22,7 +22,7 @@ export function get_perm_callback(tenant_model: MongoModel, secret: string) {
 
             if(decoded.tenant == host._id) return data;
 
-            let instances = data as any[];
+            let instances = data as Array<any>;
             instances = instances.filter( (val: any) => {
                 return val.tenant == decoded.tenant;
             });
@@ -44,7 +44,7 @@ export function get_role_callback(tenant_model: MongoModel, secret: string) {
 
             if(decoded.tenant == host._id) return data;
 
-            let instances = data as any[];
+            let instances = data as Array<any>;
             instances = instances.filter( (val: any) => {
                 return val.tenant == decoded.tenant;
             });
@@ -66,7 +66,7 @@ export function get_ustatus_callback(tenant_model: MongoModel, secret: string) {
 
             if(decoded.tenant == host._id) return data;
 
-            let instances = data as any[];
+            let instances = data as Array<any>;
             instances = instances.filter( (val: any) => {
                 return val.tenant == decoded.tenant;
             });
@@ -88,7 +88,7 @@ export function get_user_callback(tenant_model: MongoModel, secret: string) {
 
             if(decoded.tenant == host._id) return data;
 
-            let instances = data as any[];
+            let instances = data as Array<any>;
             instances = instances.filter( (val: any) => {
                 return val.tenant == decoded.tenant;
             });
