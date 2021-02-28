@@ -5,8 +5,6 @@ import { verify } from 'jsonwebtoken';
 
 import { SessDecoded } from './base_auths';
 
-import resources_config from './resources_config.json';
-
 export function get_root
 (
     app_name: string
@@ -184,7 +182,8 @@ export function get_get_uid
 export function get_resources_conf
 (
     tenant_model: MongoModel,
-    secret: string
+    secret: string,
+    resources_config: any
 )
 {
     return async function(request: any, response: any) {

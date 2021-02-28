@@ -81,17 +81,21 @@ export class IdentityService {
     private _admin_email: string;
     private _admin_password: string;
 
+    private _resources_config: any;
+
     constructor(db_url: string,
                 identity_secret: string,
                 cors_white_list: Array<string>,
                 admin_username: string,
                 admin_email: string,
                 admin_password: string,
+                resources_config: any,
                 port?: Number,
                 free_actions?: Array<string>,
                 app_name?: string) {
 
         this._identity_secret = identity_secret;
+        this._resources_config = resources_config;
 
         //########## Defining Models ##################
         this._tenant_status_model = get_tstatus_model();
@@ -187,7 +191,7 @@ export class IdentityService {
         this._app.post('/login', get_login(this._user_model, this._role_model, this._permission_model, this._tenant_model, this._identity_secret));
         this._app.post('/check_permission', get_check_perm(this._identity_secret));
         this._app.post('/get_uid', get_get_uid(this._identity_secret));
-        this._app.get('/resources_config', get_resources_conf(this._tenant_model, this._identity_secret));
+        this._app.get('/resources_config', get_resources_conf(this._tenant_model, this._identity_secret, this._resources_config));
 
         this._tenant_status_router.route(get_tstatus_callback());
         this._tenant_router.route(get_tenant_callback());
