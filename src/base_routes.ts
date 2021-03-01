@@ -115,6 +115,9 @@ export function get_login
                 let s = await tstatus_model.model.findById(tenant.status[i]);
                 tstatuses.push(`${s.title}`);
             }
+            if(!tstatuses.includes("__active") || tstatuses.includes("__inactive")) {
+                return response.status(400).send({message: "The user organization is not active"});
+            }
             let _session_token = sign({
                 exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60),
                 duration: `24 h`,
@@ -207,7 +210,7 @@ export function get_resources_conf
             }
             try {
                 let decoded = verify(token, secret || "") as SessDecoded;
-                if(decoded.permissions.includes("__read__resources_config")) {
+                if(decoded.permissions.includes("__read__resources_config in host")) {
                     let resources: Array<any> = resources_config.tenant_resources;
                     if(decoded.tenant == host._id) {
                         resources = resources.concat(resources_config.host_resources);
