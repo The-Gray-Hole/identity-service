@@ -32,7 +32,12 @@ export function get_tenant_model() {
             status: [{
                 type: Types.ObjectId,
                 ref: 'Tstatus'
-            }]
+            }],
+            plan_exp: {
+                type: Date,
+                unique: false,
+                required: false
+            }
         },
         true
     );
