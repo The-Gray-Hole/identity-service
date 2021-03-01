@@ -35,8 +35,6 @@ import { get_user_callback } from './routers_callbacks';
 
 var cors = require('cors');
 
-export { TenantLimits } from './base_auths';
-
 export enum Resources {
     TenantStatus = 1,
     Tenant,
