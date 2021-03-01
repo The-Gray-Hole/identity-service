@@ -80,6 +80,7 @@ export function get_login
     role_model: MongoModel,
     perm_model: MongoModel,
     ustatus_model: MongoModel,
+    tstatus_model: MongoModel,
     tenant_model: MongoModel,
     secret: string
 )
@@ -96,6 +97,7 @@ export function get_login
             }
             let perms = [];
             let ustatuses = [];
+            let tstatuses = [];
             for(let i = 0; i < user.roles.length; i++) {
                 let role = await role_model.model.findById(user.roles[i]);
                 for(let j = 0; j < role.permissions.length; j++) {
@@ -109,6 +111,10 @@ export function get_login
                 let t = await tenant_model.model.findById(s.tenant);
                 ustatuses.push(`${s.title} in ${t.tenantname}`);
             }
+            for(let i = 0; i < tenant.status.length; i++) {
+                let s = await tstatus_model.model.findById(tenant.status[i]);
+                tstatuses.push(`${s.title}`);
+            }
             let _session_token = sign({
                 exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60),
                 duration: `24 h`,
@@ -116,8 +122,9 @@ export function get_login
                 username: user.username,
                 useremail: user.email,
                 permissions: perms,
-                status: ustatuses,
+                ustatus: ustatuses,
                 tenant: user.tenant,
+                tstatus: tstatuses,
             }, secret)
 
             response.status(200).send({
@@ -171,7 +178,7 @@ export function get_check_user_status
             }
             try {
                 let decoded = verify(token, secret || "") as SessDecoded;
-                if(decoded.status.includes(`${status} in ${tenantname}`)) {
+                if(decoded.ustatus.includes(`${status} in ${tenantname}`)) {
                     return response.status(200).send({
                         message: `The user ${decoded.username} has the status ${status} in ${tenantname}`,
                         data: decoded
@@ -181,31 +188,6 @@ export function get_check_user_status
                 }
             } catch(err) {
                 return response.status(400).send({message: "Access Denied"});
-            }
-    }
-}
-
-export function get_get_uid
-(
-    secret: string
-)
-{
-    return async function(request: any, response: any) {
-        let token = request.headers['access-token'];
-            if(!token) {
-                return response.status(400).send({message: "Missing access token"});
-            }
-            try {
-                let decoded = verify(token, secret || "") as SessDecoded;
-                if(decoded.uid) {
-                    return response.status(200).send({
-                        uid: decoded.uid
-                    });
-                } else {
-                    return response.status(400).send({message: "Invalid Token"});
-                }
-            } catch(err) {
-                return response.status(400).send({message: "Invalid Token"});
             }
     }
 }

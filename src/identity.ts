@@ -20,11 +20,11 @@ import { get_permission_auth } from './base_auths';
 import { get_role_auth } from './base_auths';
 import { get_ustatus_auth } from './base_auths';
 import { get_user_auth } from './base_auths';
+import { TenantLimits } from './base_auths';
 import { get_root } from './base_routes';
 import { get_login } from './base_routes';
 import { get_check_user_perm } from './base_routes';
 import { get_check_user_status } from './base_routes';
-import { get_get_uid } from './base_routes';
 import { get_resources_conf } from './base_routes';
 import { get_tstatus_callback } from './routers_callbacks';
 import { get_tenant_callback } from './routers_callbacks';
@@ -83,6 +83,7 @@ export class IdentityService {
     private _admin_password: string;
 
     private _resources_config: any;
+    private _tenant_limits: TenantLimits;
 
     constructor(db_url: string,
                 identity_secret: string,
@@ -91,12 +92,14 @@ export class IdentityService {
                 admin_email: string,
                 admin_password: string,
                 resources_config: any,
+                tenant_limits: TenantLimits,
                 port?: Number,
                 free_actions?: Array<string>,
                 app_name?: string) {
 
         this._identity_secret = identity_secret;
         this._resources_config = resources_config;
+        this._tenant_limits = tenant_limits;
 
         //########## Defining Models ##################
         this._tenant_status_model = get_tstatus_model();
@@ -117,10 +120,10 @@ export class IdentityService {
         //########## Defining Auths ##################
         this._tenant_status_auth = get_tstatus_auth(this._tenant_status_model, this._identity_secret, free_actions);
         this._tenant_auth = get_tenant_auth(this._tenant_model, this._identity_secret, free_actions);
-        this._permission_auth = get_permission_auth(this._permission_model, this._tenant_model, this._identity_secret, free_actions);
-        this._role_auth = get_role_auth(this._role_model, this._tenant_model, this._permission_model, this._identity_secret, free_actions);
-        this._user_status_auth = get_ustatus_auth(this._user_status_model, this._tenant_model, this._identity_secret, free_actions);
-        this._user_auth = get_user_auth(this._user_model, this._tenant_model, this._role_model, this._user_status_model, this._identity_secret, free_actions);
+        this._permission_auth = get_permission_auth(this._permission_model, this._tenant_model, this._identity_secret, this._tenant_limits, free_actions);
+        this._role_auth = get_role_auth(this._role_model, this._tenant_model, this._permission_model, this._identity_secret, this._tenant_limits, free_actions);
+        this._user_status_auth = get_ustatus_auth(this._user_status_model, this._tenant_model, this._identity_secret, this._tenant_limits, free_actions);
+        this._user_auth = get_user_auth(this._user_model, this._tenant_model, this._role_model, this._user_status_model, this._identity_secret, this._tenant_limits, free_actions);
 
         //########## Creating the app ##################
         this._app_name = app_name || "My API";
@@ -189,7 +192,7 @@ export class IdentityService {
     public route() {
 
         this._app.get('/', get_root(this._app_name));
-        this._app.post('/login', get_login(this._user_model, this._role_model, this._permission_model, this._user_status_model, this._tenant_model, this._identity_secret));
+        this._app.post('/login', get_login(this._user_model, this._role_model, this._permission_model, this._user_status_model, this._tenant_status_model, this._tenant_model, this._identity_secret));
         this._app.post('/check/user/permission', get_check_user_perm(this._identity_secret));
         this._app.post('/check/user/status', get_check_user_status(this._identity_secret));
         this._app.get('/resources_config', get_resources_conf(this._tenant_model, this._identity_secret, this._resources_config));
