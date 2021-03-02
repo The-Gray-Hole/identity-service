@@ -4,6 +4,7 @@ import { sign } from 'jsonwebtoken';
 import { verify } from 'jsonwebtoken';
 
 import { SessDecoded } from './base_auths';
+import { PlanManager } from './plan_manager';
 
 export function get_root
 (
@@ -225,5 +226,50 @@ export function get_resources_conf
             } catch(err) {
                 return response.status(400).send({message: "Access Denied"});
             }
+    }
+}
+
+export function get_send_verf_code
+(
+    plan_manager: PlanManager
+)
+{
+    return async function(request: any, response: any) {
+        let ok = await plan_manager.send_verf_code(
+            request.body.username,
+            request.body.email,
+            request.body.password,
+            request.body.tenantname
+        )
+        if(ok) {
+            return response.status(200).send({
+                message: `A verification code was sent to ${request.body.email}`
+            });
+        } else {
+            response.status(400).send({message: "Something bad happened"});
+        }
+    }
+}
+
+export function get_create_tenant_and_admin
+(
+    plan_manager: PlanManager
+)
+{
+    return async function(request: any, response: any) {
+        let ok = await plan_manager.create_tenant_and_admin(
+            request.body.username,
+            request.body.email,
+            request.body.password,
+            request.body.tenantname,
+            request.body.verfcode
+        )
+        if(ok) {
+            return response.status(200).send({
+                message: `A verification code was sent to ${request.body.email}`
+            });
+        } else {
+            response.status(400).send({message: "Something bad happened"});
+        }
     }
 }

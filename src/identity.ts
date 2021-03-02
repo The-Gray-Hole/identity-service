@@ -21,17 +21,19 @@ import { get_role_auth } from './base_auths';
 import { get_ustatus_auth } from './base_auths';
 import { get_user_auth } from './base_auths';
 import { TenantLimits } from './base_auths';
-import { get_root } from './base_routes';
+import { get_create_tenant_and_admin, get_root } from './base_routes';
 import { get_login } from './base_routes';
 import { get_check_user_perm } from './base_routes';
 import { get_check_user_status } from './base_routes';
 import { get_resources_conf } from './base_routes';
+import { get_send_verf_code } from './base_routes';
 import { get_tstatus_callback } from './routers_callbacks';
 import { get_tenant_callback } from './routers_callbacks';
 import { get_perm_callback } from './routers_callbacks';
 import { get_role_callback } from './routers_callbacks';
 import { get_ustatus_callback } from './routers_callbacks';
 import { get_user_callback } from './routers_callbacks';
+import { PlanManager } from './plan_manager';
 
 var cors = require('cors');
 
@@ -85,6 +87,8 @@ export class IdentityService {
     private _resources_config: any;
     private _tenant_limits: TenantLimits;
 
+    private _plan_manager: PlanManager;
+
     constructor(db_url: string,
                 identity_secret: string,
                 cors_white_list: Array<string>,
@@ -93,6 +97,9 @@ export class IdentityService {
                 admin_password: string,
                 resources_config: any,
                 tenant_limits: TenantLimits,
+                pm_secret: string,
+                pm_email: string,
+                pm_epassword: string,
                 port?: Number,
                 free_actions?: Array<string>,
                 app_name?: string) {
@@ -108,6 +115,18 @@ export class IdentityService {
         this._role_model = get_role_model();
         this._user_status_model = get_ustatus_model();
         this._user_model = get_user_model();
+
+        //########## Defining Plan manager ##################
+        this._plan_manager = new PlanManager(
+            this._tenant_model,
+            this._tenant_status_model,
+            this._role_model,
+            this._user_status_model,
+            this._user_model,
+            pm_secret,
+            pm_email,
+            pm_epassword
+        );
 
         //########## Defining Controllers ##################
         this._tenant_status_ctl = new MongoController(this._tenant_status_model, valid_actions);
@@ -196,6 +215,8 @@ export class IdentityService {
         this._app.post('/check/user/permission', get_check_user_perm(this._identity_secret));
         this._app.post('/check/user/status', get_check_user_status(this._identity_secret));
         this._app.get('/resources_config', get_resources_conf(this._tenant_model, this._identity_secret, this._resources_config));
+        this._app.post('/check/tenant/verfcode', get_send_verf_code(this._plan_manager));
+        this._app.post('/create/tenant', get_create_tenant_and_admin(this._plan_manager));
 
         this._tenant_status_router.route(get_tstatus_callback());
         this._tenant_router.route(get_tenant_callback());
