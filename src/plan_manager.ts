@@ -58,19 +58,20 @@ export class PlanManager {
             html: `<b>Hey there! </b><br> The Gray Hole Verification Code: ${num1}${num2}${num3}${num4}<br/>`,
             attachments: []
         };
+        console.log(mailOptions);
+        let ok = true;
 
         await this._transporter.sendMail(mailOptions, (error: any, info: any) => {
             if (error) {
-              return false;
+                console.log(error);
+                ok = false;
             }
             this._valid_codes.add(`${num1}${num2}${num3}${num4}`);
             setTimeout( () => {
                 this._valid_codes.delete(`${num1}${num2}${num3}${num4}`);
             }, 1000 * 60);
-
-            return true;
         });
-        return false;
+        return ok;
     }
 
     async create_tenant_and_admin
