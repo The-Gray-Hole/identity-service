@@ -11,8 +11,8 @@ export class PlanManager {
     private _ustatus_model: MongoModel;
     private _user_model: MongoModel;
     private _secret: string;
-    private _transporter: any;
     private _root_email: string;
+    private _root_epassword: any;
     private _valid_codes: Set<string>;
 
     constructor
@@ -35,13 +35,7 @@ export class PlanManager {
         this._secret = secret;
         this._root_email = root_email;
         this._valid_codes = new Set();
-        this._transporter = createTransport({
-            service: 'gmail',
-            auth: {
-              user: root_email,
-              pass: root_epassword
-            }
-        });
+        this._root_epassword = root_epassword;
     }
 
     async send_verf_code(username: string, email: string, password: string, tenant_name: string) {
@@ -50,28 +44,28 @@ export class PlanManager {
         let num3 = this.encode_word(sign(password, this._secret));
         let num4 = this.encode_word(sign(tenant_name, this._secret));
 
-        var mailOptions = {
-            from: `"The Gray Hole Team" <${this._root_email}>`,
-            to: email,
-            subject: 'New User verfification code',
-            text: `The Gray Hole Verification Code: ${num1}${num2}${num3}${num4}`,
-            html: `<b>Hey there! </b><br> The Gray Hole Verification Code: ${num1}${num2}${num3}${num4}<br/>`,
-            attachments: []
-        };
-        console.log(mailOptions);
-        let ok = true;
-
-        await this._transporter.sendMail(mailOptions, (error: any, info: any) => {
-            if (error) {
-                console.log(error);
-                ok = false;
-            }
-            this._valid_codes.add(`${num1}${num2}${num3}${num4}`);
-            setTimeout( () => {
-                this._valid_codes.delete(`${num1}${num2}${num3}${num4}`);
-            }, 1000 * 60);
+        return new Promise(( resolve: any, reject: any) => {
+            var transporter = createTransport({
+                service: 'gmail',
+                auth: {
+                  user: this._root_email,
+                  pass: this._root_epassword
+                }
+            });
+            var mailOptions = {
+                from: `"The Gray Hole Team" <${this._root_email}>`,
+                to: email,
+                subject: 'New User verfification code',
+                text: `The Gray Hole Verification Code: ${num1}${num2}${num3}${num4}`
+            };
+            transporter.sendMail(mailOptions, (error: any, info: any) => {
+                if(error) {
+                    resolve(false);
+                } else {
+                    resolve(true);
+                }
+            });
         });
-        return ok;
     }
 
     async create_tenant_and_admin
