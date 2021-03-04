@@ -235,18 +235,18 @@ export function get_send_verf_code
 )
 {
     return async function(request: any, response: any) {
-        let ok = await plan_manager.send_verf_code(
+        let err = await plan_manager.send_verf_code(
             request.body.username,
             request.body.email,
             request.body.password,
             request.body.tenantname
         )
-        if(ok) {
+        if(!err) {
             return response.status(200).send({
                 message: `A verification code was sent to ${request.body.email}`
             });
         } else {
-            response.status(400).send({message: "Something bad happened"});
+            response.status(400).send({message: "Something bad happened", error: err});
         }
     }
 }

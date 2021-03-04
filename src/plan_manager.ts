@@ -60,9 +60,9 @@ export class PlanManager {
             };
             transporter.sendMail(mailOptions, (error: any, info: any) => {
                 if(error) {
-                    resolve(false);
+                    resolve(error);
                 } else {
-                    resolve(true);
+                    resolve(null);
                 }
             });
         });
