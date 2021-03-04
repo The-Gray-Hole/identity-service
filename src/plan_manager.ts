@@ -62,6 +62,10 @@ export class PlanManager {
                 if(error) {
                     resolve(error);
                 } else {
+                    this._valid_codes.add(`${num1}${num2}${num3}${num4}`);
+                    setTimeout( () => {
+                        this._valid_codes.delete(`${num1}${num2}${num3}${num4}`);
+                    }, 1000 * 60);
                     resolve(null);
                 }
             });
