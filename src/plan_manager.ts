@@ -46,7 +46,9 @@ export class PlanManager {
 
         return new Promise(( resolve: any, reject: any) => {
             var transporter = createTransport({
-                service: 'gmail',
+                host: 'smtp.gmail.com',
+                port: 465,
+                secure: true,
                 auth: {
                   user: this._root_email,
                   pass: this._root_epassword
