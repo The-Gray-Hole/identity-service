@@ -266,10 +266,10 @@ export function get_create_tenant_and_admin
         )
         if(ok) {
             return response.status(200).send({
-                message: `A verification code was sent to ${request.body.email}`
+                message: "Tenant and user created"
             });
         } else {
-            response.status(400).send({message: "Something bad happened"});
+            response.status(400).send({message: "Bad credentials"});
         }
     }
 }

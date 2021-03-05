@@ -55,8 +55,9 @@ export class PlanManager {
             var mailOptions = {
                 from: `"The Gray Hole Team" <${this._root_email}>`,
                 to: email,
-                subject: 'New User verfification code',
-                text: `The Gray Hole Verification Code: ${num1}${num2}${num3}${num4}`
+                subject: 'TGH verfification code',
+                text: `The Gray Hole Verification Code: ${num1}${num2}${num3}${num4}. You have 1 minute
+                       to use this code.`
             };
             transporter.sendMail(mailOptions, (error: any, info: any) => {
                 if(error) {
@@ -86,7 +87,7 @@ export class PlanManager {
         let num3 = this.encode_word(sign(password, this._secret));
         let num4 = this.encode_word(sign(tenant_name, this._secret));
         let code = `${num1}${num2}${num3}${num4}`
-        if(code == verf_code && this._valid_codes.has(code)) {
+        if(this._valid_codes.delete(code) && code == verf_code) {
             try {
                 let host_tenant = await this._tenant_model.model.findOne({tenantname: "host"});
                 host_tenant = host_tenant._id;
